@@ -7,9 +7,146 @@
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-    <header>
-        <h1>Welcome to Our Online Store</h1>
+    <header class="site-header" data-header>
+        <div class="container header-row">
+            <a class="brand" href="#" aria-label="ShopSmart Home">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">ShopSmart</span>
+            </a>
+
+            <nav class="site-nav" aria-label="Primary navigation" data-nav>
+                <a href="#" class="nav-link is-active">Home</a>
+                <a href="#products" class="nav-link">Products</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </nav>
+
+            <div class="header-actions">
+                <form class="search" role="search" aria-label="Product search">
+                    <label class="sr-only" for="search-input">Search products</label>
+                    <input id="search-input" class="search-input" type="search" placeholder="Search products..." autocomplete="off" />
+                    <button class="search-button" type="submit" aria-label="Search">
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <path d="M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm7.7 12.3 2.5 2.5a1 1 0 0 1-1.4 1.4l-2.5-2.5a1 1 0 0 1 1.4-1.4Z"></path>
+                        </svg>
+                    </button>
+                </form>
+
+                <button class="icon-button cart-button" type="button" aria-label="Shopping cart">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M6.2 6.6h15.5a1 1 0 0 1 1 .8l1 5.6a1 1 0 0 1-1 1.2H8.2l.4 2.2h12.6a1 1 0 1 1 0 2H7.9a1 1 0 0 1-1-.8L4.4 4.8H2a1 1 0 1 1 0-2h3.2a1 1 0 0 1 1 .8l.8 3Z"></path>
+                        <path d="M9.2 22a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm10 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"></path>
+                    </svg>
+                    <span class="badge" aria-label="Items in cart">
+                        <span id="cart-count">0</span>
+                    </span>
+                </button>
+
+                <button class="icon-button hamburger" type="button" aria-label="Open menu" aria-controls="mobile-menu" aria-expanded="false" data-hamburger>
+                    <span class="hamburger-lines" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="mobile-menu" data-mobile-menu>
+            <div class="container mobile-menu-inner">
+                <form class="search search--mobile" role="search" aria-label="Product search (mobile)">
+                    <label class="sr-only" for="search-input-mobile">Search products</label>
+                    <input id="search-input-mobile" class="search-input" type="search" placeholder="Search products..." autocomplete="off" />
+                    <button class="search-button" type="submit" aria-label="Search">
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <path d="M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm7.7 12.3 2.5 2.5a1 1 0 0 1-1.4 1.4l-2.5-2.5a1 1 0 0 1 1.4-1.4Z"></path>
+                        </svg>
+                    </button>
+                </form>
+                <nav class="mobile-nav" aria-label="Mobile navigation">
+                    <a href="#" class="nav-link">Home</a>
+                    <a href="#products" class="nav-link">Products</a>
+                    <a href="#about" class="nav-link">About</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                </nav>
+            </div>
+        </div>
     </header>
+
+    <main class="page">
+        <section class="hero">
+            <div class="container">
+                <div class="hero-grid">
+                    <div class="hero-content">
+                        <p class="hero-kicker">New Season • Limited-time offers</p>
+                        <h1 class="hero-title">Biggest Sale of the Year</h1>
+                        <p class="hero-subtitle">
+                            Discover new arrivals, trending essentials, and best deals — all in one place. Fast search, clean navigation,
+                            and a smooth shopping experience.
+                        </p>
+                        <div class="hero-cta">
+                            <a class="btn btn--primary" href="#products">Shop New Arrivals</a>
+                            <a class="btn btn--ghost" href="#about">Learn More</a>
+                        </div>
+                        <ul class="hero-highlights" aria-label="Store highlights">
+                            <li>Free shipping over ₹999</li>
+                            <li>7‑day easy returns</li>
+                            <li>Secure checkout</li>
+                        </ul>
+                    </div>
+
+                    <div class="hero-visual" aria-hidden="true">
+                        <div class="hero-card">
+                            <div class="hero-card-top">
+                                <span class="pill">Up to 60% off</span>
+                                <span class="pill pill--green">New Arrivals</span>
+                            </div>
+                            <div class="hero-card-mid">
+                                <div class="hero-avatar"></div>
+                                <div class="hero-lines">
+                                    <div class="line line--lg"></div>
+                                    <div class="line"></div>
+                                    <div class="line line--sm"></div>
+                                </div>
+                            </div>
+                            <div class="hero-card-bottom">
+                                <div class="mini-chart">
+                                    <span style="height: 40%"></span>
+                                    <span style="height: 66%"></span>
+                                    <span style="height: 48%"></span>
+                                    <span style="height: 78%"></span>
+                                    <span style="height: 60%"></span>
+                                </div>
+                                <div class="hero-price">
+                                    <span class="price-label">Starting at</span>
+                                    <span class="price-value">₹499</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glow glow--1"></div>
+                        <div class="glow glow--2"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="products" class="section">
+            <div class="container">
+                <h2 class="section-title">Products</h2>
+                <p class="section-subtitle">Product grid will go here in the next subtask.</p>
+            </div>
+        </section>
+
+        <section id="about" class="section">
+            <div class="container">
+                <h2 class="section-title">About</h2>
+                <p class="section-subtitle">A premium shopping experience built for speed and simplicity.</p>
+            </div>
+        </section>
+
+        <section id="contact" class="section">
+            <div class="container">
+                <h2 class="section-title">Contact</h2>
+                <p class="section-subtitle">Contact details will be added later.</p>
+            </div>
+        </section>
+    </main>
     <script src="scripts/app.js"></script>
 </body>
 </html>
