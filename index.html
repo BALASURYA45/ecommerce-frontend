@@ -129,7 +129,27 @@
         <section id="products" class="section">
             <div class="container">
                 <h2 class="section-title">Products</h2>
-                <p class="section-subtitle">Product grid will go here in the next subtask.</p>
+                <p class="section-subtitle">Browse our latest picks. Add items to your cart in one click.</p>
+
+                <div class="products-toolbar" role="group" aria-label="Product controls">
+                    <div class="products-meta">
+                        <span class="products-count" data-products-count>Loading products…</span>
+                    </div>
+                    <div class="products-controls">
+                        <label class="select">
+                            <span class="sr-only">Sort products</span>
+                            <select data-sort>
+                                <option value="featured">Featured</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                                <option value="title-asc">Name: A to Z</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="products-status" data-products-status aria-live="polite"></div>
+                <div id="product-grid" class="product-grid" data-product-grid></div>
             </div>
         </section>
 
