@@ -86,13 +86,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const readCart = () => {
         try {
             const raw = window.localStorage.getItem(cartKey);
-            if (!raw) return { items: {} };
+            if (!raw) return { items: {}, meta: {} };
             const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== "object") return { items: {} };
-            if (!parsed.items || typeof parsed.items !== "object") return { items: {} };
-            return { items: parsed.items };
+            if (!parsed || typeof parsed !== "object") return { items: {}, meta: {} };
+            if (!parsed.items || typeof parsed.items !== "object") return { items: {}, meta: {} };
+            const meta = parsed.meta && typeof parsed.meta === "object" ? parsed.meta : {};
+            return { ...parsed, items: parsed.items, meta };
         } catch {
-            return { items: {} };
+            return { items: {}, meta: {} };
         }
     };
 
@@ -244,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement("article");
         card.className = "product-card";
         card.dataset.productId = String(product.id);
+        const productHref = `product.html?id=${encodeURIComponent(String(product.id))}`;
 
         const ratingRate = Number(product.rating?.rate);
         const ratingCount = Number(product.rating?.count);
@@ -253,12 +255,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 : "Top rated";
 
         card.innerHTML = `
-            <div class="product-media">
-                <img class="product-img" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
-                <span class="product-tag">${product.category ?? "Featured"}</span>
-            </div>
+            <a class="product-link" href="${productHref}" aria-label="View product details">
+                <div class="product-media">
+                    <img class="product-img" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                    <span class="product-tag">${product.category ?? "Featured"}</span>
+                </div>
+            </a>
             <div class="product-body">
-                <h3 class="product-title"></h3>
+                <a class="product-link product-link--title" href="${productHref}">
+                    <h3 class="product-title"></h3>
+                </a>
                 <p class="product-meta">${ratingText}</p>
                 <div class="product-footer">
                     <div class="product-price">${formatPrice(product.price)}</div>
@@ -454,6 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (products.length === 0) {
                 products = fallbackProducts;
                 source = "fallback";
+                writeProductsCache(fallbackProducts);
                 setStatus(
                     `<div class="notice">Live products are unavailable right now. Showing demo products. <button class="btn btn--ghost btn--sm notice-btn" type="button" data-retry>Retry</button></div>`
                 );
