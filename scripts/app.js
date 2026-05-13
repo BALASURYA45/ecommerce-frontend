@@ -80,52 +80,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 2400);
     };
 
-    const cartKey = "ss_cart_v1";
+    const cartApi = window.ShopSmartCart;
+    if (!cartApi) {
+        // Cart script not loaded; keep page usable without cart functionality.
+        return;
+    }
+
     const productsCacheKey = "ss_products_cache_v1";
     const productsCacheTtlMs = 30 * 60 * 1000;
-    const readCart = () => {
-        try {
-            const raw = window.localStorage.getItem(cartKey);
-            if (!raw) return { items: {}, meta: {} };
-            const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== "object") return { items: {}, meta: {} };
-            if (!parsed.items || typeof parsed.items !== "object") return { items: {}, meta: {} };
-            const meta = parsed.meta && typeof parsed.meta === "object" ? parsed.meta : {};
-            return { ...parsed, items: parsed.items, meta };
-        } catch {
-            return { items: {}, meta: {} };
-        }
-    };
-
-    const writeCart = (cart) => {
-        try {
-            window.localStorage.setItem(cartKey, JSON.stringify(cart));
-        } catch {
-            // ignore write failures (private mode / quota)
-        }
-    };
-
-    const getCartCount = (cart) =>
-        Object.values(cart.items).reduce((total, value) => total + (Number.isFinite(value) ? value : 0), 0);
 
     const updateCartBadge = () => {
         if (!cartCount) return;
-        const cart = readCart();
-        cartCount.textContent = String(getCartCount(cart));
+        cartCount.textContent = String(cartApi.getCount());
         const badge = cartCount.closest(".badge");
         badge?.classList.remove("is-bump");
         window.requestAnimationFrame(() => badge?.classList.add("is-bump"));
     };
 
-    const addToCart = (productId) => {
-        const cart = readCart();
-        const currentQty = Number.isFinite(cart.items[productId]) ? cart.items[productId] : 0;
-        cart.items[productId] = currentQty + 1;
-        writeCart(cart);
-        updateCartBadge();
-    };
-
     updateCartBadge();
+    cartApi.onChange(updateCartBadge);
 
     const grid = document.querySelector("[data-product-grid]");
     const status = document.querySelector("[data-products-status]");
@@ -245,6 +218,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement("article");
         card.className = "product-card";
         card.dataset.productId = String(product.id);
+        card.dataset.productTitle = String(product.title ?? "");
+        card.dataset.productImage = String(product.image ?? "");
+        card.dataset.productPrice = String(product.price ?? "");
         const productHref = `product.html?id=${encodeURIComponent(String(product.id))}`;
 
         const ratingRate = Number(product.rating?.rate);
@@ -424,8 +400,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 const card = button.closest("[data-product-id]");
                 const productId = card?.dataset.productId;
                 if (!productId) return;
-
-                addToCart(productId);
+                const title = card?.dataset.productTitle ?? "";
+                const image = card?.dataset.productImage ?? "";
+                const price = Number(card?.dataset.productPrice);
+                cartApi.addItem(
+                    {
+                        productId,
+                        title,
+                        image,
+                        price: Number.isFinite(price) ? price : undefined,
+                    },
+                    1
+                );
                 showToast("Added to cart", "success");
             });
 

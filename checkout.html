@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Product • ShopSmart</title>
+    <title>Checkout • ShopSmart</title>
     <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
@@ -72,62 +72,12 @@
     <main class="page">
         <section class="section section--tight">
             <div class="container">
-                <nav class="breadcrumb" aria-label="Breadcrumb">
-                    <a href="index.html#products" class="breadcrumb-link">Products</a>
-                    <span class="breadcrumb-sep" aria-hidden="true">/</span>
-                    <span class="breadcrumb-current" data-product-breadcrumb>Loading…</span>
-                </nav>
-
-                <div class="product-detail" data-product-detail>
-                    <div class="product-gallery" aria-label="Product images">
-                        <div class="product-main-img-wrap">
-                            <img class="product-main-img" alt="" decoding="async" referrerpolicy="no-referrer" data-product-main-img />
-                            <div class="zoom-lens" aria-hidden="true" data-zoom-lens></div>
-                        </div>
-                        <p class="zoom-hint" data-zoom-hint>Hover to zoom • Tap to zoom</p>
-                        <div class="product-thumbs" role="list" aria-label="More views" data-product-thumbs></div>
-                    </div>
-
-                    <div class="product-info">
-                        <div class="product-info-top">
-                            <span class="pill pill--soft" data-product-category>—</span>
-                            <h1 class="product-detail-title" data-product-title>Loading product…</h1>
-                            <p class="product-detail-meta" data-product-rating></p>
-                        </div>
-
-                        <div class="product-detail-price-row">
-                            <div>
-                                <div class="product-detail-price" data-product-price></div>
-                                <div class="product-detail-total" aria-label="Total price">
-                                    Total: <span data-product-total>—</span>
-                                </div>
-                            </div>
-                            <div class="qty" aria-label="Quantity selector">
-                                <button class="qty-btn" type="button" data-qty-dec aria-label="Decrease quantity">−</button>
-                                <input class="qty-input" type="number" min="1" value="1" inputmode="numeric" data-qty />
-                                <button class="qty-btn" type="button" data-qty-inc aria-label="Increase quantity">+</button>
-                            </div>
-                        </div>
-
-                        <p class="product-detail-desc" data-product-desc></p>
-
-                        <div class="product-variants" data-product-variants hidden>
-                            <label class="select">
-                                <span class="variant-label">Size</span>
-                                <select data-variant-size></select>
-                            </label>
-                            <label class="select">
-                                <span class="variant-label">Color</span>
-                                <select data-variant-color></select>
-                            </label>
-                        </div>
-
-                        <div class="product-actions">
-                            <button class="btn btn--primary btn--lg" type="button" data-add-to-cart>Add to Cart</button>
-                            <a class="btn btn--ghost btn--lg" href="index.html#products">Continue shopping</a>
-                        </div>
-
-                        <div class="product-detail-status" data-product-status aria-live="polite"></div>
+                <div class="checkout-hero">
+                    <h1 class="checkout-title">Checkout</h1>
+                    <p class="checkout-subtitle">This page is a placeholder for the next subtask.</p>
+                    <div class="checkout-actions">
+                        <a class="btn btn--ghost" href="cart.html">Back to cart</a>
+                        <a class="btn btn--primary" href="index.html#products">Continue shopping</a>
                     </div>
                 </div>
             </div>
@@ -141,6 +91,7 @@
     </footer>
 
     <script src="scripts/cart.js"></script>
-    <script src="scripts/product.js"></script>
+    <script src="scripts/checkout.js"></script>
 </body>
 </html>
+

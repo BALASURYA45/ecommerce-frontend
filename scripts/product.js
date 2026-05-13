@@ -89,56 +89,24 @@ document.addEventListener("DOMContentLoaded", () => {
         return number.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
     };
 
-    const cartKey = "ss_cart_v1";
+    const cartApi = window.ShopSmartCart;
+    if (!cartApi) {
+        // Cart script not loaded; keep page usable without cart functionality.
+        return;
+    }
+
     const productsCacheKey = "ss_products_cache_v1";
-    const readCart = () => {
-        try {
-            const raw = window.localStorage.getItem(cartKey);
-            if (!raw) return { items: {}, meta: {} };
-            const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== "object") return { items: {}, meta: {} };
-            if (!parsed.items || typeof parsed.items !== "object") return { items: {}, meta: {} };
-            const meta = parsed.meta && typeof parsed.meta === "object" ? parsed.meta : {};
-            return { ...parsed, items: parsed.items, meta };
-        } catch {
-            return { items: {}, meta: {} };
-        }
-    };
-
-    const writeCart = (cart) => {
-        try {
-            window.localStorage.setItem(cartKey, JSON.stringify(cart));
-        } catch {
-            // ignore
-        }
-    };
-
-    const getCartCount = (cart) =>
-        Object.values(cart.items).reduce((total, value) => total + (Number.isFinite(value) ? value : 0), 0);
 
     const updateCartBadge = () => {
         if (!cartCount) return;
-        const cart = readCart();
-        cartCount.textContent = String(getCartCount(cart));
+        cartCount.textContent = String(cartApi.getCount());
         const badge = cartCount.closest(".badge");
         badge?.classList.remove("is-bump");
         window.requestAnimationFrame(() => badge?.classList.add("is-bump"));
     };
 
-    const addToCart = (cartItemKey, qty, metaPatch) => {
-        const countToAdd = Math.max(1, Number(qty) || 1);
-        const cart = readCart();
-        const currentQty = Number.isFinite(cart.items[cartItemKey]) ? cart.items[cartItemKey] : 0;
-        cart.items[cartItemKey] = currentQty + countToAdd;
-        if (!cart.meta || typeof cart.meta !== "object") cart.meta = {};
-        if (metaPatch && typeof metaPatch === "object") {
-            cart.meta[cartItemKey] = { ...(cart.meta[cartItemKey] ?? {}), ...metaPatch };
-        }
-        writeCart(cart);
-        updateCartBadge();
-    };
-
     updateCartBadge();
+    cartApi.onChange(updateCartBadge);
 
     const readProductsCache = () => {
         try {
@@ -480,17 +448,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const qtyApi = initQty();
 
     els.addBtn?.addEventListener("click", () => {
-        const cartKeyForItem = cartItemKeyForSelection();
         const unit = Math.round(state.basePrice * getMultiplier());
-        addToCart(cartKeyForItem, qtyApi.get(), {
-            productId,
-            title: state.product?.title ?? "",
-            image: state.product?.image ?? "",
-            category: state.product?.category ?? "",
-            selected: { ...state.selected },
-            unitPrice: unit,
-            ts: Date.now(),
-        });
+        cartApi.addItem(
+            {
+                productId,
+                title: state.product?.title ?? "",
+                image: state.product?.image ?? "",
+                price: unit,
+                variant: { ...state.selected },
+            },
+            qtyApi.get()
+        );
         if (els.addBtn) {
             els.addBtn.classList.remove("is-added");
             window.requestAnimationFrame(() => els.addBtn?.classList.add("is-added"));
