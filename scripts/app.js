@@ -80,6 +80,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 2400);
     };
 
+    const year = document.querySelector("[data-year]");
+    if (year) year.textContent = String(new Date().getFullYear());
+
+    const contactForm = document.querySelector(".form-card");
+    if (contactForm) {
+        contactForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            showToast("Thanks! We received your message (demo).", "success");
+            contactForm.reset();
+        });
+    }
+
     const cartApi = window.ShopSmartCart;
     if (!cartApi) {
         // Cart script not loaded; keep page usable without cart functionality.

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Product • ShopSmart</title>
+    <title>Login • ShopSmart</title>
     <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
@@ -19,7 +19,7 @@
                 <a href="index.html#products" class="nav-link">Products</a>
                 <a href="index.html#about" class="nav-link">About</a>
                 <a href="index.html#contact" class="nav-link">Contact</a>
-                <a href="login.html" class="nav-link" data-auth-login>Login</a>
+                <a href="login.html" class="nav-link is-active" data-auth-login>Login</a>
                 <span class="nav-pill is-hidden" data-auth-user hidden></span>
                 <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
             </nav>
@@ -67,7 +67,7 @@
                     <a href="index.html#products" class="nav-link">Products</a>
                     <a href="index.html#about" class="nav-link">About</a>
                     <a href="index.html#contact" class="nav-link">Contact</a>
-                    <a href="login.html" class="nav-link" data-auth-login>Login</a>
+                    <a href="login.html" class="nav-link is-active" data-auth-login>Login</a>
                     <span class="nav-pill is-hidden" data-auth-user hidden></span>
                     <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
                 </nav>
@@ -78,63 +78,53 @@
     <main class="page">
         <section class="section section--tight">
             <div class="container">
-                <nav class="breadcrumb" aria-label="Breadcrumb">
-                    <a href="index.html#products" class="breadcrumb-link">Products</a>
-                    <span class="breadcrumb-sep" aria-hidden="true">/</span>
-                    <span class="breadcrumb-current" data-product-breadcrumb>Loading…</span>
-                </nav>
-
-                <div class="product-detail" data-product-detail>
-                    <div class="product-gallery" aria-label="Product images">
-                        <div class="product-main-img-wrap">
-                            <img class="product-main-img" alt="" decoding="async" referrerpolicy="no-referrer" data-product-main-img />
-                            <div class="zoom-lens" aria-hidden="true" data-zoom-lens></div>
-                        </div>
-                        <p class="zoom-hint" data-zoom-hint>Hover to zoom • Tap to zoom</p>
-                        <div class="product-thumbs" role="list" aria-label="More views" data-product-thumbs></div>
-                    </div>
-
-                    <div class="product-info">
-                        <div class="product-info-top">
-                            <span class="pill pill--soft" data-product-category>—</span>
-                            <h1 class="product-detail-title" data-product-title>Loading product…</h1>
-                            <p class="product-detail-meta" data-product-rating></p>
+                <div class="auth-shell">
+                    <div class="auth-card">
+                        <div class="auth-head">
+                            <h1 class="auth-title">Welcome back</h1>
+                            <p class="auth-subtitle">Log in to continue shopping with a smoother checkout.</p>
                         </div>
 
-                        <div class="product-detail-price-row">
-                            <div>
-                                <div class="product-detail-price" data-product-price></div>
-                                <div class="product-detail-total" aria-label="Total price">
-                                    Total: <span data-product-total>—</span>
+                        <form class="auth-form" data-auth-form="login" novalidate>
+                            <div class="field">
+                                <label class="field-label" for="login-email">Email</label>
+                                <input class="field-input" id="login-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+                                <p class="field-error" data-error-for="email" aria-live="polite"></p>
+                            </div>
+
+                            <div class="field">
+                                <label class="field-label" for="login-password">Password</label>
+                                <div class="field-password">
+                                    <input class="field-input" id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+                                    <button class="field-toggle" type="button" data-toggle-password aria-label="Show password">Show</button>
                                 </div>
+                                <p class="field-error" data-error-for="password" aria-live="polite"></p>
                             </div>
-                            <div class="qty" aria-label="Quantity selector">
-                                <button class="qty-btn" type="button" data-qty-dec aria-label="Decrease quantity">−</button>
-                                <input class="qty-input" type="number" min="1" value="1" inputmode="numeric" data-qty />
-                                <button class="qty-btn" type="button" data-qty-inc aria-label="Increase quantity">+</button>
+
+                            <div class="auth-row">
+                                <a class="auth-link" href="#" data-forgot>Password recovery</a>
+                                <a class="auth-link" href="signup.html">Create account</a>
                             </div>
-                        </div>
 
-                        <p class="product-detail-desc" data-product-desc></p>
-
-                        <div class="product-variants" data-product-variants hidden>
-                            <label class="select">
-                                <span class="variant-label">Size</span>
-                                <select data-variant-size></select>
-                            </label>
-                            <label class="select">
-                                <span class="variant-label">Color</span>
-                                <select data-variant-color></select>
-                            </label>
-                        </div>
-
-                        <div class="product-actions">
-                            <button class="btn btn--primary btn--lg" type="button" data-add-to-cart>Add to Cart</button>
-                            <a class="btn btn--ghost btn--lg" href="index.html#products">Continue shopping</a>
-                        </div>
-
-                        <div class="product-detail-status" data-product-status aria-live="polite"></div>
+                            <button class="btn btn--primary btn--lg" type="submit" data-submit>Login</button>
+                            <p class="auth-status" data-auth-status aria-live="polite"></p>
+                        </form>
                     </div>
+
+                    <aside class="auth-aside" aria-label="Security note">
+                        <div class="auth-aside-card">
+                            <h2 class="auth-aside-title">Secure by design</h2>
+                            <p class="auth-aside-text">
+                                This is a frontend demo. Your credentials are validated locally and stored only in your browser for the
+                                purpose of this project.
+                            </p>
+                            <ul class="auth-bullets" aria-label="Highlights">
+                                <li>Real-time validation</li>
+                                <li>Password visibility toggle</li>
+                                <li>Mobile-first layout</li>
+                            </ul>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </section>
@@ -174,6 +164,6 @@
     <script src="scripts/cart.js"></script>
     <script type="module" src="scripts/firebase-init.js"></script>
     <script type="module" src="scripts/session-ui.js"></script>
-    <script src="scripts/product.js"></script>
+    <script type="module" src="scripts/auth-firebase.js"></script>
 </body>
 </html>

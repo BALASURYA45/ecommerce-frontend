@@ -5,6 +5,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchForms = document.querySelectorAll("form.search");
     const cartCount = document.querySelector("#cart-count");
     const year = document.querySelector("[data-year]");
+    const checkoutForm = document.querySelector("[data-checkout-form]");
+    const checkoutItems = document.querySelector("[data-checkout-items]");
+    const emptyState = document.querySelector("[data-checkout-empty]");
+    const summaryCount = document.querySelector("[data-summary-count]");
+    const summarySubtotal = document.querySelector("[data-summary-subtotal]");
+    const summaryTotal = document.querySelector("[data-summary-total]");
 
     const cartApi = window.ShopSmartCart;
     if (!cartApi) return;
@@ -69,7 +75,147 @@ document.addEventListener("DOMContentLoaded", () => {
         window.requestAnimationFrame(() => badge?.classList.add("is-bump"));
     };
 
+    const createToast = () => {
+        let toast = document.querySelector("[data-toast]");
+        if (toast) return toast;
+
+        toast = document.createElement("div");
+        toast.className = "toast";
+        toast.setAttribute("data-toast", "");
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        document.body.appendChild(toast);
+        return toast;
+    };
+
+    const toastEl = createToast();
+    let toastTimer = null;
+    const showToast = (message, variant = "default") => {
+        toastEl.textContent = message;
+        toastEl.dataset.variant = variant;
+        toastEl.classList.add("is-visible");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+            toastEl.classList.remove("is-visible");
+        }, 2400);
+    };
+
+    const formatPrice = (value) => {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return "—";
+        return number.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+    };
+
+    const computeSubtotal = (cart) =>
+        Object.values(cart.items).reduce((total, item) => {
+            const price = Number(item?.price);
+            const qty = Number(item?.qty);
+            if (!Number.isFinite(price) || !Number.isFinite(qty) || qty <= 0) return total;
+            return total + price * qty;
+        }, 0);
+
+    const renderSummary = () => {
+        if (!checkoutItems) return;
+        const cart = cartApi.readCart();
+        const items = Object.values(cart.items);
+        items.sort((a, b) => Number(b.addedAt ?? 0) - Number(a.addedAt ?? 0));
+
+        checkoutItems.innerHTML = "";
+
+        if (emptyState) emptyState.hidden = items.length > 0;
+        if (checkoutForm) checkoutForm.classList.toggle("is-disabled", items.length === 0);
+
+        const fragment = document.createDocumentFragment();
+        items.forEach((item) => {
+            const row = document.createElement("div");
+            row.className = "checkout-item";
+
+            const title = String(item?.title || "Product");
+            const imgSrc = String(item?.image || "");
+            const qty = Math.max(1, Math.min(99, Math.floor(Number(item?.qty) || 1)));
+            const unit = Number(item?.price);
+            const total = Number.isFinite(unit) ? unit * qty : null;
+
+            row.innerHTML = `
+                <img class="checkout-item-img" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                <div>
+                    <p class="checkout-item-title"></p>
+                    <p class="checkout-item-meta">${qty} × ${Number.isFinite(unit) ? formatPrice(unit) : "—"}</p>
+                </div>
+                <div class="checkout-item-total">${total === null ? "—" : formatPrice(total)}</div>
+            `;
+
+            const img = row.querySelector("img");
+            const titleEl = row.querySelector(".checkout-item-title");
+            if (img) {
+                img.alt = title;
+                img.src = imgSrc;
+                img.width = 160;
+                img.height = 160;
+            }
+            if (titleEl) titleEl.textContent = title;
+
+            fragment.appendChild(row);
+        });
+
+        checkoutItems.appendChild(fragment);
+
+        const subtotal = computeSubtotal(cart);
+        const count = cartApi.getCount(cart);
+        if (summaryCount) summaryCount.textContent = `${count} item${count === 1 ? "" : "s"}`;
+        if (summarySubtotal) summarySubtotal.textContent = formatPrice(subtotal);
+        if (summaryTotal) summaryTotal.textContent = formatPrice(subtotal);
+    };
+
     updateCartBadge();
     cartApi.onChange(updateCartBadge);
-});
+    cartApi.onChange(renderSummary);
+    renderSummary();
 
+    if (checkoutForm) {
+        checkoutForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const cart = cartApi.readCart();
+            const count = cartApi.getCount(cart);
+            if (count <= 0) {
+                showToast("Your cart is empty.", "error");
+                return;
+            }
+
+            const form = new FormData(checkoutForm);
+            const name = String(form.get("name") ?? "").trim();
+            const phone = String(form.get("phone") ?? "").trim();
+            const address = String(form.get("address") ?? "").trim();
+            const city = String(form.get("city") ?? "").trim();
+            const zip = String(form.get("zip") ?? "").trim();
+            const payment = String(form.get("payment") ?? "cod");
+
+            const phoneOk = /^[0-9]{10}$/.test(phone.replace(/\s+/g, ""));
+            const zipOk = /^[0-9]{5,6}$/.test(zip.replace(/\s+/g, ""));
+
+            if (!name || !address || !city) {
+                showToast("Please fill in your shipping details.", "error");
+                return;
+            }
+
+            if (!phoneOk) {
+                showToast("Enter a valid 10-digit phone number.", "error");
+                return;
+            }
+
+            if (!zipOk) {
+                showToast("Enter a valid PIN code.", "error");
+                return;
+            }
+
+            // Demo behavior: "place order" and clear cart.
+            cartApi.writeCart({ version: 2, items: {} });
+            renderSummary();
+
+            const paymentLabel = payment === "card" ? "Card" : payment === "upi" ? "UPI" : "Cash on Delivery";
+            showToast(`Order placed! Payment: ${paymentLabel}`, "success");
+            checkoutForm.reset();
+        });
+    }
+});
