@@ -1,3 +1,5 @@
+import { auth, db, isConfigured, addDoc, collection, serverTimestamp } from "./firebase-init.js";
+
 document.addEventListener("DOMContentLoaded", () => {
     const header = document.querySelector("[data-header]");
     const hamburger = document.querySelector("[data-hamburger]");
@@ -114,6 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return total + price * qty;
         }, 0);
 
+    // Payment modules intentionally removed. Checkout is Cash on Delivery only (demo).
+
     const renderSummary = () => {
         if (!checkoutItems) return;
         const cart = cartApi.readCart();
@@ -137,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const total = Number.isFinite(unit) ? unit * qty : null;
 
             row.innerHTML = `
-                <img class="checkout-item-img" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                <img class="checkout-item-img" alt="" loading="lazy" decoding="async" />
                 <div>
                     <p class="checkout-item-title"></p>
                     <p class="checkout-item-meta">${qty} × ${Number.isFinite(unit) ? formatPrice(unit) : "—"}</p>
@@ -173,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSummary();
 
     if (checkoutForm) {
-        checkoutForm.addEventListener("submit", (event) => {
+        checkoutForm.addEventListener("submit", async (event) => {
             event.preventDefault();
 
             const cart = cartApi.readCart();
@@ -189,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const address = String(form.get("address") ?? "").trim();
             const city = String(form.get("city") ?? "").trim();
             const zip = String(form.get("zip") ?? "").trim();
-            const payment = String(form.get("payment") ?? "cod");
+            const payment = "cod";
 
             const phoneOk = /^[0-9]{10}$/.test(phone.replace(/\s+/g, ""));
             const zipOk = /^[0-9]{5,6}$/.test(zip.replace(/\s+/g, ""));
@@ -209,13 +213,48 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Demo behavior: "place order" and clear cart.
-            cartApi.writeCart({ version: 2, items: {} });
-            renderSummary();
+            const subtotal = computeSubtotal(cart);
+            const orderPayload = {
+                userId: auth?.currentUser?.uid ?? null,
+                userEmail: auth?.currentUser?.email ?? null,
+                items: Object.values(cart.items || {}).map((item) => ({
+                    key: item?.key ?? null,
+                    productId: item?.productId ?? null,
+                    title: item?.title ?? null,
+                    image: item?.image ?? null,
+                    price: Number.isFinite(Number(item?.price)) ? Number(item.price) : null,
+                    qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
+                    variant: item?.variant ?? null,
+                })),
+                subtotal: Number.isFinite(subtotal) ? subtotal : null,
+                shipping: 0,
+                total: Number.isFinite(subtotal) ? subtotal : null,
+                address: { name, phone, address, city, zip },
+                payment: { method: payment, status: "initiated" },
+                createdAt: serverTimestamp?.() ?? new Date().toISOString(),
+                client: { userAgent: navigator.userAgent },
+            };
 
-            const paymentLabel = payment === "card" ? "Card" : payment === "upi" ? "UPI" : "Cash on Delivery";
-            showToast(`Order placed! Payment: ${paymentLabel}`, "success");
-            checkoutForm.reset();
+            const finalizeCod = async () => {
+                const payload = {
+                    ...orderPayload,
+                    payment: { method: "cod", status: "pending" },
+                };
+
+                if (isConfigured() && db) {
+                    try {
+                        await addDoc(collection(db, "orders"), payload);
+                    } catch {
+                        // ignore
+                    }
+                }
+
+                cartApi.writeCart({ version: 2, items: {} });
+                renderSummary();
+                showToast("Order placed (Cash on Delivery).", "success");
+                checkoutForm.reset();
+            };
+            void finalizeCod();
         });
     }
 });

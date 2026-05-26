@@ -1,0 +1,9 @@
+{
+  "name": "ShopSmart",
+  "short_name": "ShopSmart",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#2874f0",
+  "description": "Premium e-commerce UI demo with cart and Firebase auth-ready flows."
+}

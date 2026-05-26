@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login • ShopSmart</title>
+    <meta name="description" content="Login to ShopSmart to checkout faster and track your orders.">
+    <meta name="theme-color" content="#2874f0">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="favicon.ico">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
@@ -15,11 +20,30 @@
             </a>
 
             <nav class="site-nav" aria-label="Primary navigation" data-nav>
-                <a href="index.html" class="nav-link">Home</a>
-                <a href="index.html#products" class="nav-link">Products</a>
-                <a href="index.html#about" class="nav-link">About</a>
-                <a href="index.html#contact" class="nav-link">Contact</a>
-                <a href="login.html" class="nav-link is-active" data-auth-login>Login</a>
+                <a href="index.html" class="nav-link">
+                    <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2 2.8 11a1 1 0 0 0 1.3 1.5l1.4-1.1V20a2 2 0 0 0 2 2h2.7a1 1 0 0 0 1-1v-5.1h2.6V21a1 1 0 0 0 1 1H17a2 2 0 0 0 2-2v-8.6l1.4 1.1A1 1 0 1 0 21.7 11L12 3.2Z"/></svg></span>
+                    Home
+                </a>
+                <a href="products.html" class="nav-link">
+                    <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Zm0 9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3Zm9-9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V6Zm0 9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3Z"/></svg></span>
+                    Products
+                </a>
+                <a href="about.html" class="nav-link">
+                    <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8A9.2 9.2 0 1 0 21.2 12 9.21 9.21 0 0 0 12 2.8Zm0 2a7.2 7.2 0 1 1-7.2 7.2A7.21 7.21 0 0 1 12 4.8Zm0 5.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4ZM10.9 11.2a1 1 0 0 0 0 2H11v4a1 1 0 0 0 2 0v-5a1 1 0 0 0-1-1h-1.1Z"/></svg></span>
+                    About
+                </a>
+                <a href="contact.html" class="nav-link">
+                    <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v11a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6a2 2 0 0 0-2-2Zm0 2v.3l-8 5.1-8-5.1V6h16ZM5 18a1 1 0 0 1-1-1V8.7l7.5 4.8a1 1 0 0 0 1.1 0L20 8.7V17a1 1 0 0 1-1 1H5Z"/></svg></span>
+                    Contact
+                </a>
+                <a href="admin.html" class="nav-link is-hidden" data-admin-link hidden>
+                    <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5 20 6v6.2c0 5-3.4 9-8 9.3-4.6-.3-8-4.3-8-9.3V6l8-3.5Zm0 3.1L6 8.1v4.1c0 3.8 2.4 7 6 7.3 3.6-.3 6-3.5 6-7.3V8.1l-6-2.5Z"/></svg></span>
+                    Admin
+                </a>
+                <a href="login.html" class="nav-link is-active" data-auth-login>
+                    <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8a6.2 6.2 0 0 0-6.2 6.2c0 2.3 1.2 4.3 3 5.4C6 15.5 4.3 17.6 4 20.2a1 1 0 0 0 1 1.1h14a1 1 0 0 0 1-1.1c-.3-2.6-2-4.7-4.8-5.8 1.8-1.1 3-3.1 3-5.4A6.2 6.2 0 0 0 12 2.8Zm0 2a4.2 4.2 0 1 1 0 8.4 4.2 4.2 0 0 1 0-8.4Zm-5.7 14.5c.8-2.3 3-4 5.7-4s4.9 1.7 5.7 4H6.3Z"/></svg></span>
+                    Login
+                </a>
                 <span class="nav-pill is-hidden" data-auth-user hidden></span>
                 <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
             </nav>
@@ -63,11 +87,30 @@
                     </button>
                 </form>
                 <nav class="mobile-nav" aria-label="Mobile navigation">
-                    <a href="index.html" class="nav-link">Home</a>
-                    <a href="index.html#products" class="nav-link">Products</a>
-                    <a href="index.html#about" class="nav-link">About</a>
-                    <a href="index.html#contact" class="nav-link">Contact</a>
-                    <a href="login.html" class="nav-link is-active" data-auth-login>Login</a>
+                    <a href="index.html" class="nav-link">
+                        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2 2.8 11a1 1 0 0 0 1.3 1.5l1.4-1.1V20a2 2 0 0 0 2 2h2.7a1 1 0 0 0 1-1v-5.1h2.6V21a1 1 0 0 0 1 1H17a2 2 0 0 0 2-2v-8.6l1.4 1.1A1 1 0 1 0 21.7 11L12 3.2Z"/></svg></span>
+                        Home
+                    </a>
+                    <a href="products.html" class="nav-link">
+                        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Zm0 9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3Zm9-9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V6Zm0 9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-3Z"/></svg></span>
+                        Products
+                    </a>
+                    <a href="about.html" class="nav-link">
+                        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8A9.2 9.2 0 1 0 21.2 12 9.21 9.21 0 0 0 12 2.8Zm0 2a7.2 7.2 0 1 1-7.2 7.2A7.21 7.21 0 0 1 12 4.8Zm0 5.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4ZM10.9 11.2a1 1 0 0 0 0 2H11v4a1 1 0 0 0 2 0v-5a1 1 0 0 0-1-1h-1.1Z"/></svg></span>
+                        About
+                    </a>
+                    <a href="contact.html" class="nav-link">
+                        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v11a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6a2 2 0 0 0-2-2Zm0 2v.3l-8 5.1-8-5.1V6h16ZM5 18a1 1 0 0 1-1-1V8.7l7.5 4.8a1 1 0 0 0 1.1 0L20 8.7V17a1 1 0 0 1-1 1H5Z"/></svg></span>
+                        Contact
+                    </a>
+                    <a href="admin.html" class="nav-link is-hidden" data-admin-link hidden>
+                        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5 20 6v6.2c0 5-3.4 9-8 9.3-4.6-.3-8-4.3-8-9.3V6l8-3.5Zm0 3.1L6 8.1v4.1c0 3.8 2.4 7 6 7.3 3.6-.3 6-3.5 6-7.3V8.1l-6-2.5Z"/></svg></span>
+                        Admin
+                    </a>
+                    <a href="login.html" class="nav-link is-active" data-auth-login>
+                        <span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8a6.2 6.2 0 0 0-6.2 6.2c0 2.3 1.2 4.3 3 5.4C6 15.5 4.3 17.6 4 20.2a1 1 0 0 0 1 1.1h14a1 1 0 0 0 1-1.1c-.3-2.6-2-4.7-4.8-5.8 1.8-1.1 3-3.1 3-5.4A6.2 6.2 0 0 0 12 2.8Zm0 2a4.2 4.2 0 1 1 0 8.4 4.2 4.2 0 0 1 0-8.4Zm-5.7 14.5c.8-2.3 3-4 5.7-4s4.9 1.7 5.7 4H6.3Z"/></svg></span>
+                        Login
+                    </a>
                     <span class="nav-pill is-hidden" data-auth-user hidden></span>
                     <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
                 </nav>
@@ -142,9 +185,9 @@
 
             <div class="footer-col" aria-label="Quick links">
                 <h3 class="footer-title">Quick links</h3>
-                <a class="footer-link" href="index.html#products">Products</a>
-                <a class="footer-link" href="index.html#about">About</a>
-                <a class="footer-link" href="index.html#contact">Contact</a>
+                <a class="footer-link" href="products.html">Products</a>
+                <a class="footer-link" href="about.html">About</a>
+                <a class="footer-link" href="contact.html">Contact</a>
                 <a class="footer-link" href="cart.html">Cart</a>
             </div>
 
@@ -164,6 +207,7 @@
     <script src="scripts/cart.js"></script>
     <script type="module" src="scripts/firebase-init.js"></script>
     <script type="module" src="scripts/session-ui.js"></script>
-    <script type="module" src="scripts/auth-firebase.js"></script>
+    <script type="module" src="scripts/pwa.js"></script>
+    <script type="module" src="scripts/auth-firebase.js?v=12"></script>
 </body>
 </html>

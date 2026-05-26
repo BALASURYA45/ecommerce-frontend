@@ -1,6 +1,12 @@
 node_modules/
-       dist/
-       .env
-       .vscode/
-       .DS_Store
-       
+dist/
+.env
+.vscode/
+.DS_Store
+replacements.txt
+
+# Local Firebase / payments config (do not commit)
+scripts/firebase-config.local.js
+scripts/firebase-config.local.json
+scripts/admin-config.local.json
+server/.env

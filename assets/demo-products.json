@@ -1,0 +1,82 @@
+{
+  "products": [
+    {
+      "id": "local-101",
+      "title": "Premium Wireless Headphones",
+      "price": 1499,
+      "description": "Comfort-fit over‑ear headphones with deep bass and long battery life.",
+      "category": "electronics",
+      "thumbnail": "https://images.unsplash.com/photo-1518441902117-f0a6a0d83a67?auto=format&fit=crop&w=900&q=70",
+      "images": [
+        "https://images.unsplash.com/photo-1518441902117-f0a6a0d83a67?auto=format&fit=crop&w=1200&q=70"
+      ],
+      "rating": 4.6,
+      "stock": 1200
+    },
+    {
+      "id": "local-102",
+      "title": "Smartwatch Series Pro",
+      "price": 1999,
+      "description": "Health tracking, notifications, and multi‑day battery in a sleek design.",
+      "category": "electronics",
+      "thumbnail": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=70",
+      "images": [
+        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=70"
+      ],
+      "rating": 4.3,
+      "stock": 760
+    },
+    {
+      "id": "local-103",
+      "title": "Everyday Sneakers (Comfort Fit)",
+      "price": 1299,
+      "description": "Lightweight everyday sneakers with breathable mesh and cushioned sole.",
+      "category": "fashion",
+      "thumbnail": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=70",
+      "images": [
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=70"
+      ],
+      "rating": 4.5,
+      "stock": 890
+    },
+    {
+      "id": "local-104",
+      "title": "Organic Cotton T‑Shirt",
+      "price": 499,
+      "description": "Soft organic cotton t‑shirt with a clean minimalist cut.",
+      "category": "fashion",
+      "thumbnail": "https://images.unsplash.com/photo-1520975682031-a27f86b21c13?auto=format&fit=crop&w=900&q=70",
+      "images": [
+        "https://images.unsplash.com/photo-1520975682031-a27f86b21c13?auto=format&fit=crop&w=1200&q=70"
+      ],
+      "rating": 4.2,
+      "stock": 320
+    },
+    {
+      "id": "local-105",
+      "title": "Minimal Leather Wallet",
+      "price": 799,
+      "description": "Slim wallet with premium leather finish and smart card slots.",
+      "category": "accessories",
+      "thumbnail": "https://images.unsplash.com/photo-1588497859490-85d1c17db96d?auto=format&fit=crop&w=900&q=70",
+      "images": [
+        "https://images.unsplash.com/photo-1588497859490-85d1c17db96d?auto=format&fit=crop&w=1200&q=70"
+      ],
+      "rating": 4.4,
+      "stock": 540
+    },
+    {
+      "id": "local-106",
+      "title": "Desk Lamp with Warm Glow",
+      "price": 699,
+      "description": "Adjustable desk lamp with warm ambient light for focused work.",
+      "category": "home",
+      "thumbnail": "https://images.unsplash.com/photo-1540932239986-30128078f3c1?auto=format&fit=crop&w=900&q=70",
+      "images": [
+        "https://images.unsplash.com/photo-1540932239986-30128078f3c1?auto=format&fit=crop&w=1200&q=70"
+      ],
+      "rating": 4.1,
+      "stock": 410
+    }
+  ]
+}

@@ -167,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             row.innerHTML = `
                 <div class="cart-item-media">
-                    <img class="cart-item-img" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+                    <img class="cart-item-img" alt="" loading="lazy" decoding="async" />
                 </div>
                 <div class="cart-item-main">
                     <div class="cart-item-top">
@@ -275,4 +275,3 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "checkout.html";
     });
 });
-

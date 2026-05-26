@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin • ShopSmart</title>
+    <meta name="description" content="Admin dashboard — manage products and moderate reviews." />
+    <meta name="theme-color" content="#2874f0" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="favicon.ico" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body data-require-auth>
+    <header class="site-header" data-header>
+        <div class="container header-row">
+            <a class="brand" href="index.html" aria-label="ShopSmart Home">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">ShopSmart</span>
+            </a>
+
+            <nav class="site-nav" aria-label="Primary navigation" data-nav>
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="products.html" class="nav-link">Products</a>
+                <a href="cart.html" class="nav-link">Cart</a>
+                <a href="admin.html" class="nav-link is-active" data-admin-link>Admin</a>
+                <a href="admin-tools.html" class="nav-link" data-admin-link>Tools</a>
+                <a href="login.html" class="nav-link is-hidden" data-auth-login hidden>Login</a>
+                <span class="nav-pill is-hidden" data-auth-user hidden></span>
+                <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
+            </nav>
+
+            <div class="header-actions">
+                <a class="icon-button cart-button" href="cart.html" aria-label="Shopping cart">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M6.2 6.6h15.5a1 1 0 0 1 1 .8l1 5.6a1 1 0 0 1-1 1.2H8.2l.4 2.2h12.6a1 1 0 1 1 0 2H7.9a1 1 0 0 1-1-.8L4.4 4.8H2a1 1 0 1 1 0-2h3.2a1 1 0 0 1 1 .8l.8 3Z"></path>
+                        <path d="M9.2 22a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm10 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"></path>
+                    </svg>
+                    <span class="badge" aria-label="Items in cart">
+                        <span id="cart-count">0</span>
+                    </span>
+                </a>
+
+                <button class="icon-button hamburger" type="button" aria-label="Open menu" aria-controls="mobile-menu" aria-expanded="false" data-hamburger>
+                    <span class="hamburger-lines" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="mobile-menu" data-mobile-menu>
+            <div class="container mobile-menu-inner">
+                <nav class="mobile-nav" aria-label="Mobile navigation">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="products.html" class="nav-link">Products</a>
+                    <a href="cart.html" class="nav-link">Cart</a>
+                    <a href="admin.html" class="nav-link is-active" data-admin-link>Admin</a>
+                    <a href="admin-tools.html" class="nav-link" data-admin-link>Tools</a>
+                    <a href="login.html" class="nav-link is-hidden" data-auth-login hidden>Login</a>
+                    <span class="nav-pill is-hidden" data-auth-user hidden></span>
+                    <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <section class="section section--tight">
+            <div class="container">
+                <div class="admin-head">
+                    <div>
+                        <h1 class="checkout-title">Admin</h1>
+                        <p class="checkout-subtitle">Manage products and content stored in Firestore.</p>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="btn btn--primary" type="button" data-add-product>Add product</button>
+                    </div>
+                </div>
+
+                <div class="admin-grid">
+                    <section class="panel-card" aria-label="Products">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Products</h2>
+                            <p class="panel-subtitle">Create, edit, and remove products.</p>
+                        </div>
+
+                        <div class="admin-toolbar">
+                            <label class="field field--inline">
+                                <span class="field-label field-label--inline">Search</span>
+                                <input class="field-input field-input--sm" type="search" placeholder="Search by title/category" data-admin-search />
+                            </label>
+                        </div>
+
+                        <div class="admin-status" data-admin-status aria-live="polite"></div>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table" aria-label="Products table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Category</th>
+                                        <th class="th-right">Price</th>
+                                        <th class="th-right">Rating</th>
+                                        <th class="th-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody data-admin-products></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <aside class="panel-card" aria-label="Tips">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Notes</h2>
+                            <p class="panel-subtitle">Production safety reminders.</p>
+                        </div>
+
+                        <ul class="note-list">
+                            <li>Restrict admin access with Firestore rules.</li>
+                            <li>Use server-side verification for payments.</li>
+                            <li>Prefer hosted images with stable URLs.</li>
+                            <li>Keep product IDs stable for SEO links.</li>
+                        </ul>
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-bottom">
+            <p class="footer-text">© <span data-year></span> ShopSmart. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="scripts/cart.js"></script>
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/session-ui.js"></script>
+    <script type="module" src="scripts/pwa.js"></script>
+    <script type="module" src="scripts/admin.js"></script>
+</body>
+</html>

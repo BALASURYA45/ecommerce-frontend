@@ -1,3 +1,21 @@
+import {
+    auth,
+    db,
+    isConfigured,
+    onAuthStateChanged,
+    doc,
+    getDoc,
+    collection,
+    addDoc,
+    query,
+    orderBy,
+    limit,
+    onSnapshot,
+    serverTimestamp,
+    runTransaction,
+    increment,
+} from "./firebase-init.js";
+
 document.addEventListener("DOMContentLoaded", () => {
     const header = document.querySelector("[data-header]");
     const hamburger = document.querySelector("[data-hamburger]");
@@ -95,7 +113,85 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    const productsCacheKey = "ss_products_cache_v1";
+    const productsCacheKey = "ss_products_cache_v5";
+    const recentlyViewedKey = "ss_recently_viewed_v1";
+
+    const toyProducts = [
+        {
+            id: "toy-001",
+            title: "Wooden Rainbow Stacking Blocks",
+            price: 349,
+            image: "./assets/products/toys.svg",
+            images: ["./assets/products/toys.svg"],
+            category: "kids toys",
+            description: "Colorful stacking blocks for shape recognition, balance, and early learning play.",
+            rating: { rate: 4.8, count: 342 },
+        },
+        {
+            id: "toy-002",
+            title: "Soft Plush Bear Gift Set",
+            price: 499,
+            image: "./assets/products/toys.svg",
+            images: ["./assets/products/toys.svg"],
+            category: "kids toys",
+            description: "Soft plush toy set for birthdays, gifting, and cozy bedtime routines.",
+            rating: { rate: 4.7, count: 418 },
+        },
+        {
+            id: "toy-003",
+            title: "STEM Building Bricks Kit",
+            price: 899,
+            image: "./assets/products/toys.svg",
+            images: ["./assets/products/toys.svg"],
+            category: "kids toys",
+            description: "Creative building kit for problem-solving, motor skills, and imaginative play.",
+            rating: { rate: 4.9, count: 276 },
+        },
+        {
+            id: "toy-004",
+            title: "Animal Puzzle Board",
+            price: 299,
+            image: "./assets/products/toys.svg",
+            images: ["./assets/products/toys.svg"],
+            category: "kids toys",
+            description: "Animal-themed puzzle board for toddlers learning names, colors, and matching.",
+            rating: { rate: 4.5, count: 198 },
+        },
+        {
+            id: "toy-005",
+            title: "Remote Control Mini Car",
+            price: 749,
+            image: "./assets/products/toys.svg",
+            images: ["./assets/products/toys.svg"],
+            category: "kids toys",
+            description: "Compact remote control car with smooth handling for indoor racing fun.",
+            rating: { rate: 4.6, count: 521 },
+        },
+        {
+            id: "toy-006",
+            title: "Kids Art and Craft Box",
+            price: 599,
+            image: "./assets/products/toys.svg",
+            images: ["./assets/products/toys.svg"],
+            category: "kids toys",
+            description: "Craft box with safe, colorful supplies for drawing, paper craft, and weekend creativity.",
+            rating: { rate: 4.8, count: 310 },
+        },
+    ];
+
+    const pushRecentlyViewed = (productId) => {
+        const id = String(productId ?? "").trim();
+        if (!id) return;
+        try {
+            const raw = window.localStorage.getItem(recentlyViewedKey);
+            const parsed = raw ? JSON.parse(raw) : [];
+            const list = Array.isArray(parsed) ? parsed.map((x) => String(x)) : [];
+            const next = [id, ...list.filter((x) => x !== id)].slice(0, 20);
+            window.localStorage.setItem(recentlyViewedKey, JSON.stringify(next));
+        } catch {
+            // ignore
+        }
+    };
 
     const updateCartBadge = () => {
         if (!cartCount) return;
@@ -121,24 +217,99 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    const fetchProductById = async (productId) => {
-        const numericId = Number(productId);
-        if (!Number.isInteger(numericId) || numericId <= 0) return null;
+    const normalizeFirestoreProduct = (id, data) => {
+        const product = data && typeof data === "object" ? data : {};
+        const ratingRate = Number(product.ratingRate ?? product.rating?.rate);
+        const ratingCount = Number(product.ratingCount ?? product.rating?.count);
+        return {
+            id,
+            title: String(product.title ?? "Product"),
+            price: Number(product.price ?? 0),
+            image: String(product.image ?? ""),
+            images: Array.isArray(product.images) ? product.images.map((x) => String(x)) : undefined,
+            category: String(product.category ?? "featured").toLowerCase(),
+            description: String(product.description ?? ""),
+            rating: {
+                rate: Number.isFinite(ratingRate) ? ratingRate : 4.3,
+                count: Number.isFinite(ratingCount) ? ratingCount : 250,
+            },
+        };
+    };
 
-        const controller = new AbortController();
-        const timer = window.setTimeout(() => controller.abort(), 9000);
-        try {
-            const response = await fetch(`https://fakestoreapi.com/products/${numericId}`, {
-                signal: controller.signal,
-                headers: { accept: "application/json" },
-            });
-            if (!response.ok) throw new Error(`Bad response: ${response.status}`);
-            const data = await response.json();
-            if (!data || typeof data !== "object") return null;
-            return data;
-        } finally {
-            window.clearTimeout(timer);
+    const normalizeApiProduct = (raw) => {
+        const product = raw && typeof raw === "object" ? raw : {};
+        const id = product.id ?? product._id ?? product.productId;
+        const ratingRate = Number(product.ratingRate ?? product.rating?.rate ?? product.rating);
+        const ratingCount = Number(product.ratingCount ?? product.rating?.count ?? product.stock);
+        const images = Array.isArray(product.images) ? product.images.map((x) => String(x)) : [];
+        const thumbnail = String(product.thumbnail ?? product.image ?? images[0] ?? "");
+        return {
+            id: String(id ?? ""),
+            title: String(product.title ?? "Product"),
+            price: Number(product.price ?? 0),
+            image: thumbnail,
+            images: images.length ? images : thumbnail ? [thumbnail, thumbnail, thumbnail] : [],
+            category: String(product.category ?? "featured").toLowerCase(),
+            description: String(product.description ?? ""),
+            rating: {
+                rate: Number.isFinite(ratingRate) ? ratingRate : 4.3,
+                count: Number.isFinite(ratingCount) ? ratingCount : 250,
+            },
+        };
+    };
+
+    const withTimeout = (promise, ms, label) =>
+        Promise.race([
+            promise,
+            new Promise((_, reject) =>
+                window.setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+            ),
+        ]);
+
+    const fetchProductById = async (productId) => {
+        const id = String(productId ?? "").trim();
+        if (!id) return null;
+
+        const toyProduct = toyProducts.find((product) => String(product.id) === id);
+        if (toyProduct) return toyProduct;
+
+        const numericId = Number(id);
+        if (Number.isInteger(numericId) && numericId > 0) {
+            try {
+                const controller = new AbortController();
+                const timer = window.setTimeout(() => controller.abort(), 9000);
+                try {
+                    const response = await fetch(
+                        `https://fakestoreapi.com/products/${numericId}`,
+                        {
+                        signal: controller.signal,
+                        headers: { accept: "application/json" },
+                        }
+                    );
+                    if (!response.ok) throw new Error(`Bad response: ${response.status}`);
+                    const data = await response.json();
+                    if (data && typeof data === "object") {
+                        const normalized = normalizeApiProduct(data);
+                        if (normalized?.id) return normalized;
+                    }
+                } finally {
+                    window.clearTimeout(timer);
+                }
+            } catch {
+                // ignore and fallback to Firestore/cache
+            }
         }
+
+        if (isConfigured() && db) {
+            try {
+                const snap = await withTimeout(getDoc(doc(db, "products", id)), 4500, "Firestore product");
+                if (snap.exists()) return normalizeFirestoreProduct(snap.id, snap.data());
+            } catch {
+                // ignore and fallback
+            }
+        }
+
+        return null;
     };
 
     const els = {
@@ -162,6 +333,10 @@ document.addEventListener("DOMContentLoaded", () => {
         sizeSelect: document.querySelector("[data-variant-size]"),
         colorSelect: document.querySelector("[data-variant-color]"),
         total: document.querySelector("[data-product-total]"),
+        reviewsList: document.querySelector("[data-reviews-list]"),
+        reviewsEmpty: document.querySelector("[data-reviews-empty]"),
+        reviewForm: document.querySelector("[data-review-form]"),
+        reviewHint: document.querySelector("[data-review-hint]"),
     };
 
     const setStatus = (html) => {
@@ -187,7 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.setAttribute("role", "listitem");
             btn.dataset.src = src;
             btn.setAttribute("aria-label", "Select image");
-            btn.innerHTML = `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`;
+            btn.innerHTML = `<img alt="" loading="lazy" decoding="async" />`;
             const img = btn.querySelector("img");
             if (img) img.src = src;
             if (src === current) btn.classList.add("is-active");
@@ -246,6 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const desc = (product?.description ?? "").toString();
         state.product = product ?? null;
         state.basePrice = Number(product?.price) || 0;
+        pushRecentlyViewed(product?.id ?? productId);
 
         if (els.breadcrumb) els.breadcrumb.textContent = title;
         document.title = `${title} • ShopSmart`;
@@ -394,6 +570,82 @@ document.addEventListener("DOMContentLoaded", () => {
         setStatus("");
     };
 
+    const formatDate = (value) => {
+        try {
+            if (!value) return "";
+            const d = value?.toDate ? value.toDate() : new Date(value);
+            if (!(d instanceof Date) || Number.isNaN(d.getTime())) return "";
+            return d.toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" });
+        } catch {
+            return "";
+        }
+    };
+
+    const renderReviews = (reviews) => {
+        if (!els.reviewsList) return;
+        els.reviewsList.innerHTML = "";
+        const list = Array.isArray(reviews) ? reviews : [];
+        if (els.reviewsEmpty) els.reviewsEmpty.hidden = list.length > 0;
+
+        const frag = document.createDocumentFragment();
+        list.forEach((r) => {
+            const card = document.createElement("article");
+            card.className = "review-card";
+            const rating = Math.max(1, Math.min(5, Math.floor(Number(r.rating) || 5)));
+            const stars = "★★★★★".slice(0, rating) + "☆☆☆☆☆".slice(0, 5 - rating);
+            card.innerHTML = `
+                <div class="review-top">
+                    <div>
+                        <div class="review-name"></div>
+                        <div class="review-meta"></div>
+                    </div>
+                    <div class="review-stars" aria-label="Rating">${stars}</div>
+                </div>
+                <p class="review-text"></p>
+            `;
+            const name = card.querySelector(".review-name");
+            const meta = card.querySelector(".review-meta");
+            const text = card.querySelector(".review-text");
+            if (name) name.textContent = String(r.userName || r.userEmail || "User");
+            if (meta) meta.textContent = formatDate(r.createdAt) || "";
+            if (text) text.textContent = String(r.text || "");
+            frag.appendChild(card);
+        });
+        els.reviewsList.appendChild(frag);
+    };
+
+    let unsubscribeReviews = null;
+    const wireReviews = () => {
+        if (!els.reviewsList) return;
+        if (!isConfigured() || !db) return;
+        if (!productId) return;
+
+        try {
+            unsubscribeReviews?.();
+        } catch {
+            // ignore
+        }
+
+        const q = query(collection(db, "products", String(productId), "reviews"), orderBy("createdAt", "desc"), limit(20));
+        unsubscribeReviews = onSnapshot(
+            q,
+            (snap) => {
+                const reviews = [];
+                snap.forEach((d) => reviews.push({ id: d.id, ...d.data() }));
+                renderReviews(reviews);
+            },
+            () => {
+                // ignore live errors
+            }
+        );
+    };
+
+    const updateReviewHint = () => {
+        if (!els.reviewHint) return;
+        const loggedIn = Boolean(auth?.currentUser);
+        els.reviewHint.textContent = loggedIn ? "Your review will be public." : "Login required to post.";
+    };
+
     const showNotFound = () => {
         if (els.breadcrumb) els.breadcrumb.textContent = "Not found";
         if (els.title) els.title.textContent = "Product not found";
@@ -403,7 +655,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (els.rating) els.rating.textContent = "";
         setMainImg("", "Product image");
         if (els.thumbs) els.thumbs.innerHTML = "";
-        setStatus(`<div class="notice">Invalid or missing product id. <a class="btn btn--ghost btn--sm" href="index.html#products">Go back</a></div>`);
+        setStatus(`<div class="notice">Invalid or missing product id. <a class="btn btn--ghost btn--sm" href="products.html">Go back</a></div>`);
     };
 
     const productId = new URLSearchParams(window.location.search).get("id");
@@ -576,6 +828,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const init = async () => {
         setStatus(`<div class="notice">Loading…</div>`);
+        updateReviewHint();
+        wireReviews();
 
         const cached = readProductsCache();
         const fromCache = cached?.find((item) => String(item?.id) === String(productId)) ?? null;
@@ -599,4 +853,54 @@ document.addEventListener("DOMContentLoaded", () => {
 
     void init();
     initZoom();
+
+    els.reviewForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!isConfigured() || !db) {
+            setStatus(`<div class="notice">Firebase is not configured.</div>`);
+            return;
+        }
+        const user = auth?.currentUser;
+        if (!user) {
+            setStatus(`<div class="notice">Please login to submit a review.</div>`);
+            return;
+        }
+
+        const form = new FormData(els.reviewForm);
+        const rating = Math.max(1, Math.min(5, Math.floor(Number(form.get("rating") ?? 5))));
+        const text = String(form.get("text") ?? "").trim();
+        if (!text) return;
+
+        try {
+            await addDoc(collection(db, "products", String(productId), "reviews"), {
+                rating,
+                text,
+                userId: user.uid,
+                userEmail: user.email ?? null,
+                userName: user.displayName ?? null,
+                createdAt: serverTimestamp(),
+            });
+
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, "products", String(productId));
+                const snap = await tx.get(ref);
+                const data = snap.exists() ? snap.data() : {};
+                const currentCount = Number(data?.ratingCount ?? 0);
+                const currentRate = Number(data?.ratingRate ?? 0);
+                const nextCount = currentCount + 1;
+                const nextRate = nextCount <= 0 ? rating : (currentRate * currentCount + rating) / nextCount;
+                tx.update(ref, {
+                    ratingCount: increment(1),
+                    ratingRate: Number.isFinite(nextRate) ? Math.round(nextRate * 10) / 10 : rating,
+                    updatedAt: serverTimestamp(),
+                });
+            });
+
+            els.reviewForm.reset();
+        } catch {
+            setStatus(`<div class="notice">Failed to submit review. Try again.</div>`);
+        }
+    });
+
+    onAuthStateChanged(auth, () => updateReviewHint());
 });

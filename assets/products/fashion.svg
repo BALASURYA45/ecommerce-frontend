@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#db2777"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" fill="url(#g)"/>
+  <path d="M250 210c25-30 55-45 70-45s45 15 70 45l45 65-50 35-28-38v210H283V307l-28 38-50-35 45-65Z" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.18)" stroke-width="6" stroke-linejoin="round"/>
+  <text x="320" y="560" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="34" fill="rgba(255,255,255,0.86)">Fashion</text>
+</svg>

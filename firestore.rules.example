@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Production recommendation:
+    // Set a custom claim `admin: true` on admin users (via Admin SDK),
+    // then rely on it in rules.
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    // Products catalog
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      // Reviews subcollection
+      match /reviews/{reviewId} {
+        allow read: if true;
+
+        // Any signed-in user can create a review, but can only create it as themselves.
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.rating is number
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1200;
+
+        // Users cannot edit/delete reviews in this demo; admins can moderate.
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      // Users can read only their own orders; admins can read all.
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+
+      // Users can create orders only for themselves.
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+
+      // Only admins can update/delete orders.
+      allow update, delete: if isAdmin();
+    }
+  }
+}
+

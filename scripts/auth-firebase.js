@@ -1,5 +1,6 @@
 import {
     auth,
+    ensureFirebase,
     isConfigured,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -100,9 +101,16 @@ const friendlyAuthError = (code) => {
     return "Something went wrong. Please try again.";
 };
 
-const ensureFirebaseReady = (form) => {
-    if (isConfigured() && auth) return true;
-    setStatus(form, "Firebase is not configured yet. Update scripts/firebase-config.js.", "error");
+const ensureFirebaseReady = async (form) => {
+    if (!isConfigured()) {
+        setStatus(form, "Firebase is not configured. Update scripts/firebase-config.local.json.", "error");
+        return false;
+    }
+
+    await ensureFirebase();
+    if (auth) return true;
+
+    setStatus(form, "Firebase failed to load (network/CDN blocked). Check your internet and retry.", "error");
     return false;
 };
 
@@ -141,7 +149,7 @@ const wireLogin = (form) => {
 
     forgot?.addEventListener("click", async (event) => {
         event.preventDefault();
-        if (!ensureFirebaseReady(form)) return;
+        if (!(await ensureFirebaseReady(form))) return;
 
         const email = normalizeEmail(emailInput?.value);
         if (!email || !isValidEmail(email)) {
@@ -160,7 +168,7 @@ const wireLogin = (form) => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         setStatus(form, "");
-        if (!ensureFirebaseReady(form)) return;
+        if (!(await ensureFirebaseReady(form))) return;
         if (!validate()) return;
 
         const email = normalizeEmail(emailInput?.value);
@@ -171,7 +179,7 @@ const wireLogin = (form) => {
             setStatus(form, "Logged in successfully. Redirecting…", "success");
             showToast("Welcome back!", "success");
             window.setTimeout(() => {
-                window.location.href = "index.html";
+                window.location.href = "products.html";
             }, 650);
         } catch (err) {
             setStatus(form, friendlyAuthError(err?.code), "error");
@@ -257,7 +265,7 @@ const wireSignup = (form) => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         setStatus(form, "");
-        if (!ensureFirebaseReady(form)) return;
+        if (!(await ensureFirebaseReady(form))) return;
         if (!validate()) return;
 
         const name = normalizeName(nameInput?.value);
@@ -276,7 +284,7 @@ const wireSignup = (form) => {
             setStatus(form, "Account created. Redirecting…", "success");
             showToast("Account created!", "success");
             window.setTimeout(() => {
-                window.location.href = "index.html";
+                window.location.href = "products.html";
             }, 750);
         } catch (err) {
             setStatus(form, friendlyAuthError(err?.code), "error");
@@ -290,4 +298,3 @@ document.querySelectorAll("[data-auth-form]").forEach((form) => {
     if (mode === "login") wireLogin(form);
     if (mode === "signup") wireSignup(form);
 });
-
