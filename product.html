@@ -132,8 +132,20 @@
                         <div class="product-main-img-wrap">
                             <img class="product-main-img" alt="" decoding="async" data-product-main-img />
                             <div class="zoom-lens" aria-hidden="true" data-zoom-lens></div>
+                            <button class="gallery-nav gallery-nav--prev" type="button" aria-label="Previous image" data-gallery-prev>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.8 4.4a1 1 0 0 1 0 1.4L9.6 12l6.2 6.2a1 1 0 0 1-1.4 1.4l-6.9-6.9a1 1 0 0 1 0-1.4l6.9-6.9a1 1 0 0 1 1.4 0Z"/></svg>
+                            </button>
+                            <button class="gallery-nav gallery-nav--next" type="button" aria-label="Next image" data-gallery-next>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 19.6a1 1 0 0 1 0-1.4l6.2-6.2-6.2-6.2a1 1 0 0 1 1.4-1.4l6.9 6.9a1 1 0 0 1 0 1.4l-6.9 6.9a1 1 0 0 1-1.4 0Z"/></svg>
+                            </button>
+                            <button class="gallery-open" type="button" aria-label="Open image gallery" data-gallery-open>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5a1 1 0 1 1 0 2H6v4a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1Zm9 0h5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V5h-4a1 1 0 1 1 0-2ZM5 14a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Zm14 0a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 1 1 0-2h4v-4a1 1 0 0 1 1-1Z"/></svg>
+                            </button>
                         </div>
-                        <p class="zoom-hint" data-zoom-hint>Hover to zoom • Tap to zoom</p>
+                        <div class="gallery-meta">
+                            <p class="zoom-hint" data-zoom-hint>Hover to zoom - Tap to zoom</p>
+                            <span data-gallery-count>1 / 1</span>
+                        </div>
                         <div class="product-thumbs" role="list" aria-label="More views" data-product-thumbs></div>
                     </div>
 
@@ -173,10 +185,31 @@
 
                         <div class="product-actions">
                             <button class="btn btn--primary btn--lg" type="button" data-add-to-cart>Add to Cart</button>
+                            <button class="btn btn--ghost btn--lg favorite-detail-btn" type="button" aria-pressed="false" data-detail-wishlist>
+                                <span class="favorite-heart" aria-hidden="true">♥</span>
+                                <span data-detail-wishlist-text>Add favorite</span>
+                            </button>
                             <a class="btn btn--ghost btn--lg" href="products.html">Continue shopping</a>
                         </div>
 
                         <div class="product-detail-status" data-product-status aria-live="polite"></div>
+                    </div>
+                </div>
+
+                <div class="gallery-lightbox" data-gallery-lightbox hidden role="dialog" aria-modal="true" aria-label="Product image gallery" tabindex="-1">
+                    <div class="gallery-lightbox-backdrop" data-lightbox-close></div>
+                    <div class="gallery-lightbox-panel">
+                        <button class="gallery-lightbox-close" type="button" aria-label="Close gallery" data-lightbox-close>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.3 5a1 1 0 0 1 1.4 0L12 9.3 16.3 5a1 1 0 1 1 1.4 1.4L13.4 10.7l4.3 4.3a1 1 0 0 1-1.4 1.4L12 12.1l-4.3 4.3a1 1 0 0 1-1.4-1.4l4.3-4.3-4.3-4.3A1 1 0 0 1 6.3 5Z"/></svg>
+                        </button>
+                        <button class="gallery-lightbox-nav gallery-lightbox-nav--prev" type="button" aria-label="Previous image" data-lightbox-prev>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.8 4.4a1 1 0 0 1 0 1.4L9.6 12l6.2 6.2a1 1 0 0 1-1.4 1.4l-6.9-6.9a1 1 0 0 1 0-1.4l6.9-6.9a1 1 0 0 1 1.4 0Z"/></svg>
+                        </button>
+                        <img class="gallery-lightbox-img" alt="" data-lightbox-img />
+                        <button class="gallery-lightbox-nav gallery-lightbox-nav--next" type="button" aria-label="Next image" data-lightbox-next>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 19.6a1 1 0 0 1 0-1.4l6.2-6.2-6.2-6.2a1 1 0 0 1 1.4-1.4l6.9 6.9a1 1 0 0 1 0 1.4l-6.9 6.9a1 1 0 0 1-1.4 0Z"/></svg>
+                        </button>
+                        <div class="gallery-lightbox-caption" data-lightbox-caption>1 / 1</div>
                     </div>
                 </div>
 
@@ -259,6 +292,6 @@
     <script type="module" src="scripts/firebase-init.js"></script>
     <script type="module" src="scripts/session-ui.js"></script>
     <script type="module" src="scripts/pwa.js"></script>
-    <script type="module" src="scripts/product.js?v=14"></script>
+    <script type="module" src="scripts/product.js?v=18"></script>
 </body>
 </html>

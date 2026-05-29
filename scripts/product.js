@@ -113,8 +113,27 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    const productsCacheKey = "ss_products_cache_v5";
+    const productsCacheKey = "ss_products_cache_v6";
     const recentlyViewedKey = "ss_recently_viewed_v1";
+    const wishlistKey = "ss_wishlist_v1";
+
+    const readWishlist = () => {
+        try {
+            const raw = window.localStorage.getItem(wishlistKey);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed.map((id) => String(id)) : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const writeWishlist = (ids) => {
+        try {
+            window.localStorage.setItem(wishlistKey, JSON.stringify(ids));
+        } catch {
+            // ignore
+        }
+    };
 
     const toyProducts = [
         {
@@ -236,20 +255,32 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     };
 
-    const normalizeApiProduct = (raw) => {
+    const normalizeApiProduct = (raw, options = {}) => {
         const product = raw && typeof raw === "object" ? raw : {};
         const id = product.id ?? product._id ?? product.productId;
         const ratingRate = Number(product.ratingRate ?? product.rating?.rate ?? product.rating);
         const ratingCount = Number(product.ratingCount ?? product.rating?.count ?? product.stock);
-        const images = Array.isArray(product.images) ? product.images.map((x) => String(x)) : [];
-        const thumbnail = String(product.thumbnail ?? product.image ?? images[0] ?? "");
+        const rawImages = Array.isArray(product.images) ? product.images : [];
+        const images = rawImages
+            .map((x) => (typeof x === "string" ? x : x?.url ?? x?.src ?? ""))
+            .map((x) => String(x).replaceAll("[", "").replaceAll("]", "").replaceAll('"', "").trim())
+            .filter(Boolean);
+        const rawImage = product.thumbnail ?? product.image ?? product.images?.[0] ?? "";
+        const thumbnail = String(typeof rawImage === "string" ? rawImage : rawImage?.url ?? rawImage?.src ?? images[0] ?? "")
+            .replaceAll("[", "")
+            .replaceAll("]", "")
+            .replaceAll('"', "")
+            .trim();
+        const source = String(options.source ?? product.source ?? "");
+        const normalizedId = String(id ?? "").trim();
+        const prefixedId = source && normalizedId ? `${source}-${normalizedId}` : normalizedId;
         return {
-            id: String(id ?? ""),
+            id: prefixedId,
             title: String(product.title ?? "Product"),
             price: Number(product.price ?? 0),
             image: thumbnail,
             images: images.length ? images : thumbnail ? [thumbnail, thumbnail, thumbnail] : [],
-            category: String(product.category ?? "featured").toLowerCase(),
+            category: String(product.category?.name ?? product.category ?? "featured").toLowerCase(),
             description: String(product.description ?? ""),
             rating: {
                 rate: Number.isFinite(ratingRate) ? ratingRate : 4.3,
@@ -266,12 +297,48 @@ document.addEventListener("DOMContentLoaded", () => {
             ),
         ]);
 
+    const fetchJson = async (url, label) => {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), 9000);
+        try {
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: { accept: "application/json" },
+            });
+            if (!response.ok) throw new Error(`${label} bad response: ${response.status}`);
+            return response.json();
+        } finally {
+            window.clearTimeout(timer);
+        }
+    };
+
     const fetchProductById = async (productId) => {
         const id = String(productId ?? "").trim();
         if (!id) return null;
 
         const toyProduct = toyProducts.find((product) => String(product.id) === id);
         if (toyProduct) return toyProduct;
+
+        const prefixed = id.match(/^(fs|dj|pl)-(.+)$/);
+        if (prefixed) {
+            const [, source, rawId] = prefixed;
+            try {
+                if (source === "fs") {
+                    const data = await fetchJson(`https://fakestoreapi.com/products/${encodeURIComponent(rawId)}`, "Fake Store product");
+                    return normalizeApiProduct(data, { source: "fs" });
+                }
+                if (source === "dj") {
+                    const data = await fetchJson(`https://dummyjson.com/products/${encodeURIComponent(rawId)}`, "DummyJSON product");
+                    return normalizeApiProduct(data, { source: "dj" });
+                }
+                if (source === "pl") {
+                    const data = await fetchJson(`https://api.escuelajs.co/api/v1/products/${encodeURIComponent(rawId)}`, "Platzi product");
+                    return normalizeApiProduct(data, { source: "pl" });
+                }
+            } catch {
+                // ignore and fallback to cache/firestore
+            }
+        }
 
         const numericId = Number(id);
         if (Number.isInteger(numericId) && numericId > 0) {
@@ -323,12 +390,23 @@ document.addEventListener("DOMContentLoaded", () => {
         desc: document.querySelector("[data-product-desc]"),
         mainImg: document.querySelector("[data-product-main-img]"),
         thumbs: document.querySelector("[data-product-thumbs]"),
+        galleryPrev: document.querySelector("[data-gallery-prev]"),
+        galleryNext: document.querySelector("[data-gallery-next]"),
+        galleryOpen: document.querySelector("[data-gallery-open]"),
+        galleryCount: document.querySelector("[data-gallery-count]"),
+        lightbox: document.querySelector("[data-gallery-lightbox]"),
+        lightboxImg: document.querySelector("[data-lightbox-img]"),
+        lightboxCaption: document.querySelector("[data-lightbox-caption]"),
+        lightboxPrev: document.querySelector("[data-lightbox-prev]"),
+        lightboxNext: document.querySelector("[data-lightbox-next]"),
         zoomLens: document.querySelector("[data-zoom-lens]"),
         zoomHint: document.querySelector("[data-zoom-hint]"),
         qty: document.querySelector("[data-qty]"),
         qtyDec: document.querySelector("[data-qty-dec]"),
         qtyInc: document.querySelector("[data-qty-inc]"),
         addBtn: document.querySelector("[data-add-to-cart]"),
+        wishBtn: document.querySelector("[data-detail-wishlist]"),
+        wishText: document.querySelector("[data-detail-wishlist-text]"),
         variantsWrap: document.querySelector("[data-product-variants]"),
         sizeSelect: document.querySelector("[data-variant-size]"),
         colorSelect: document.querySelector("[data-variant-color]"),
@@ -355,13 +433,14 @@ document.addEventListener("DOMContentLoaded", () => {
         els.thumbs.classList.remove("is-empty");
 
         const fragment = document.createDocumentFragment();
-        list.forEach((src) => {
+        list.forEach((src, index) => {
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "thumb";
             btn.setAttribute("role", "listitem");
             btn.dataset.src = src;
-            btn.setAttribute("aria-label", "Select image");
+            btn.dataset.index = String(index);
+            btn.setAttribute("aria-label", `Select image ${index + 1}`);
             btn.innerHTML = `<img alt="" loading="lazy" decoding="async" />`;
             const img = btn.querySelector("img");
             if (img) img.src = src;
@@ -385,7 +464,88 @@ document.addEventListener("DOMContentLoaded", () => {
         selected: { size: null, color: null },
         availability: null,
         zoomEnabled: false,
+        galleryImages: [],
+        galleryIndex: 0,
+        lightboxOpen: false,
     };
+
+    const syncWishlistButton = () => {
+        if (!els.wishBtn) return;
+        const wished = readWishlist().includes(String(productId));
+        els.wishBtn.setAttribute("aria-pressed", wished ? "true" : "false");
+        if (els.wishText) els.wishText.textContent = wished ? "Favorited" : "Add favorite";
+    };
+
+    const toggleDetailWishlist = () => {
+        const ids = readWishlist();
+        const id = String(productId);
+        const exists = ids.includes(id);
+        const next = exists ? ids.filter((x) => x !== id) : [id, ...ids].slice(0, 200);
+        writeWishlist(next);
+        syncWishlistButton();
+        showToast(exists ? "Removed from favorites" : "Added to favorites", "default");
+    };
+
+    const normalizeGalleryImages = (product) => {
+        const raw = [
+            ...(Array.isArray(product?.images) ? product.images : []),
+            product?.image,
+            product?.thumbnail,
+        ];
+        const seen = new Set();
+        return raw
+            .map((src) => String(src ?? "").trim())
+            .filter(Boolean)
+            .filter((src) => {
+                if (seen.has(src)) return false;
+                seen.add(src);
+                return true;
+            });
+    };
+
+    const updateGalleryControls = () => {
+        const total = state.galleryImages.length;
+        const current = total > 0 ? state.galleryIndex + 1 : 0;
+        const hasMany = total > 1;
+        if (els.galleryCount) els.galleryCount.textContent = `${Math.max(1, current)} / ${Math.max(1, total)}`;
+        [els.galleryPrev, els.galleryNext, els.lightboxPrev, els.lightboxNext].forEach((btn) => {
+            if (!btn) return;
+            btn.disabled = !hasMany;
+            btn.hidden = !hasMany;
+        });
+        if (els.galleryOpen) els.galleryOpen.disabled = total === 0;
+        if (els.lightboxCaption) els.lightboxCaption.textContent = `${Math.max(1, current)} / ${Math.max(1, total)}`;
+    };
+
+    const syncThumbs = () => {
+        if (!els.thumbs) return;
+        els.thumbs.querySelectorAll("button.thumb").forEach((node) => {
+            const active = Number(node.dataset.index) === state.galleryIndex;
+            node.classList.toggle("is-active", active);
+            node.setAttribute("aria-current", active ? "true" : "false");
+        });
+    };
+
+    const setGalleryIndex = (index, options = {}) => {
+        const total = state.galleryImages.length;
+        if (total === 0) return;
+        const next = ((Number(index) % total) + total) % total;
+        state.galleryIndex = next;
+        const src = state.galleryImages[next];
+        setMainImg(src, els.title?.textContent ?? "Product image");
+        if (els.lightboxImg) {
+            els.lightboxImg.src = src;
+            els.lightboxImg.alt = els.title?.textContent ?? "Product image";
+        }
+        syncThumbs();
+        updateGalleryControls();
+        if (options.focusThumb) {
+            const thumb = els.thumbs?.querySelector(`button.thumb[data-index="${next}"]`);
+            thumb?.focus();
+        }
+    };
+
+    const moveGallery = (delta) => setGalleryIndex(state.galleryIndex + delta);
 
     const cartItemKeyForSelection = () => {
         const size = state.selected.size ? `size:${state.selected.size}` : "";
@@ -422,6 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
         state.product = product ?? null;
         state.basePrice = Number(product?.price) || 0;
         pushRecentlyViewed(product?.id ?? productId);
+        syncWishlistButton();
 
         if (els.breadcrumb) els.breadcrumb.textContent = title;
         document.title = `${title} • ShopSmart`;
@@ -439,16 +600,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     : "Top rated";
         }
 
-        const imageList =
-            Array.isArray(product?.images) && product.images.length > 0
-                ? product.images
-                : product?.image
-                  ? [product.image, product.image, product.image]
-                  : [];
-
-        const initialSrc = imageList[0] ?? product?.image ?? "";
+        const imageList = normalizeGalleryImages(product);
+        state.galleryImages = imageList;
+        state.galleryIndex = 0;
+        const initialSrc = imageList[0] ?? "";
         setMainImg(initialSrc, title);
         setThumbs(imageList, initialSrc);
+        setGalleryIndex(0);
 
         const variants = product?.variants;
         const sizes = Array.isArray(variants?.sizes) ? variants.sizes : null;
@@ -718,13 +876,66 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("Added to cart", "success");
     });
 
+    els.wishBtn?.addEventListener("click", toggleDetailWishlist);
+    syncWishlistButton();
+
     els.thumbs?.addEventListener("click", (event) => {
         const btn = event.target.closest("button.thumb");
         if (!btn) return;
-        const src = btn.dataset.src;
-        if (!src) return;
-        setMainImg(src, els.title?.textContent ?? "Product image");
-        els.thumbs.querySelectorAll("button.thumb").forEach((node) => node.classList.toggle("is-active", node === btn));
+        const index = Number(btn.dataset.index);
+        if (!Number.isFinite(index)) return;
+        setGalleryIndex(index);
+    });
+
+    els.thumbs?.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+        event.preventDefault();
+        setGalleryIndex(state.galleryIndex + (event.key === "ArrowRight" ? 1 : -1), { focusThumb: true });
+    });
+
+    els.galleryPrev?.addEventListener("click", () => moveGallery(-1));
+    els.galleryNext?.addEventListener("click", () => moveGallery(1));
+
+    const openLightbox = () => {
+        if (!els.lightbox || state.galleryImages.length === 0) return;
+        state.lightboxOpen = true;
+        els.lightbox.hidden = false;
+        document.body.classList.add("has-lightbox");
+        setGalleryIndex(state.galleryIndex);
+        window.setTimeout(() => els.lightbox?.classList.add("is-open"), 20);
+        els.lightbox.focus?.();
+    };
+
+    const closeLightbox = () => {
+        if (!els.lightbox) return;
+        state.lightboxOpen = false;
+        els.lightbox.classList.remove("is-open");
+        document.body.classList.remove("has-lightbox");
+        window.setTimeout(() => {
+            if (!state.lightboxOpen && els.lightbox) els.lightbox.hidden = true;
+        }, 160);
+        els.galleryOpen?.focus();
+    };
+
+    els.galleryOpen?.addEventListener("click", openLightbox);
+    els.lightbox?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-lightbox-close]")) closeLightbox();
+    });
+    els.lightboxPrev?.addEventListener("click", () => moveGallery(-1));
+    els.lightboxNext?.addEventListener("click", () => moveGallery(1));
+
+    document.addEventListener("keydown", (event) => {
+        const focusInForm = event.target instanceof Element && event.target.closest("input, textarea, select");
+        if (focusInForm) return;
+        if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            moveGallery(-1);
+        } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            moveGallery(1);
+        } else if (event.key === "Escape" && state.lightboxOpen) {
+            closeLightbox();
+        }
     });
 
     const initZoom = () => {
@@ -758,14 +969,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const enableZoom = () => {
             state.zoomEnabled = true;
             wrap.classList.add("is-zooming");
-            if (els.zoomHint) els.zoomHint.textContent = "Move to zoom • Tap to exit";
+            if (els.zoomHint) els.zoomHint.textContent = "Move to zoom - Tap to exit";
         };
 
         const disableZoom = () => {
             state.zoomEnabled = false;
             wrap.classList.remove("is-zooming");
             setVars(50, 50, 1);
-            if (els.zoomHint) els.zoomHint.textContent = "Hover to zoom • Tap to zoom";
+            if (els.zoomHint) els.zoomHint.textContent = "Hover to zoom - Tap to zoom";
         };
 
         disableZoom();

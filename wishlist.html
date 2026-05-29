@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wishlist - ShopSmart</title>
+    <meta name="description" content="Your saved favorite products on ShopSmart.">
+    <meta name="theme-color" content="#2874f0">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="favicon.ico">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+    <header class="site-header" data-header>
+        <div class="container header-row">
+            <a class="brand" href="index.html" aria-label="ShopSmart Home">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">ShopSmart</span>
+            </a>
+
+            <nav class="site-nav" aria-label="Primary navigation" data-nav>
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="products.html" class="nav-link">Products</a>
+                <a href="wishlist.html" class="nav-link is-active">Wishlist</a>
+                <a href="about.html" class="nav-link">About</a>
+                <a href="contact.html" class="nav-link">Contact</a>
+                <a href="login.html" class="nav-link" data-auth-login>Login</a>
+                <span class="nav-pill is-hidden" data-auth-user hidden></span>
+                <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
+            </nav>
+
+            <div class="header-actions">
+                <a class="icon-button wishlist-header-btn" href="wishlist.html" aria-label="Wishlist">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M12.1 20.1c-.1 0-.2 0-.3-.1C7.1 17 4 14.2 4 10.9 4 8.5 5.8 6.6 8.2 6.6c1.2 0 2.3.5 3 1.3.7-.8 1.8-1.3 3-1.3 2.4 0 4.2 1.9 4.2 4.3 0 3.3-3.1 6.1-7.8 9.1-.1.1-.2.1-.3.1Z"></path>
+                    </svg>
+                    <span class="badge"><span data-wishlist-count>0</span></span>
+                </a>
+                <a class="icon-button cart-button" href="cart.html" aria-label="Shopping cart">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M6.2 6.6h15.5a1 1 0 0 1 1 .8l1 5.6a1 1 0 0 1-1 1.2H8.2l.4 2.2h12.6a1 1 0 1 1 0 2H7.9a1 1 0 0 1-1-.8L4.4 4.8H2a1 1 0 1 1 0-2h3.2a1 1 0 0 1 1 .8l.8 3Z"></path>
+                        <path d="M9.2 22a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm10 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"></path>
+                    </svg>
+                    <span class="badge"><span id="cart-count">0</span></span>
+                </a>
+                <button class="icon-button hamburger" type="button" aria-label="Open menu" aria-controls="mobile-menu" aria-expanded="false" data-hamburger>
+                    <span class="hamburger-lines" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="mobile-menu" data-mobile-menu>
+            <div class="container mobile-menu-inner">
+                <nav class="mobile-nav" aria-label="Mobile navigation">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="products.html" class="nav-link">Products</a>
+                    <a href="wishlist.html" class="nav-link is-active">Wishlist</a>
+                    <a href="about.html" class="nav-link">About</a>
+                    <a href="contact.html" class="nav-link">Contact</a>
+                    <a href="login.html" class="nav-link" data-auth-login>Login</a>
+                    <span class="nav-pill is-hidden" data-auth-user hidden></span>
+                    <button class="nav-link nav-link--button is-hidden" type="button" data-auth-logout hidden>Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <section class="section">
+            <div class="container">
+                <div class="wishlist-hero">
+                    <div>
+                        <p class="category-kicker">Saved picks</p>
+                        <h1 class="section-title category-page-title">Wishlist</h1>
+                        <p class="section-subtitle">Keep your favorite products ready for later shopping.</p>
+                    </div>
+                    <div class="wishlist-actions">
+                        <a class="btn btn--primary" href="products.html">Explore products</a>
+                        <button class="btn btn--ghost" type="button" data-clear-wishlist>Clear wishlist</button>
+                    </div>
+                </div>
+
+                <div class="wishlist-summary" data-wishlist-summary></div>
+                <div class="products-status" data-wishlist-status aria-live="polite"></div>
+                <div id="wishlist-grid" class="product-grid wishlist-grid" data-wishlist-grid></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-bottom">
+            <p class="footer-text">&copy; <span data-year></span> ShopSmart. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="scripts/cart.js"></script>
+    <script type="module" src="scripts/firebase-init.js?v=11"></script>
+    <script type="module" src="scripts/session-ui.js?v=11"></script>
+    <script type="module" src="scripts/pwa.js?v=11"></script>
+    <script type="module" src="scripts/wishlist.js?v=1"></script>
+</body>
+</html>

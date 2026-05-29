@@ -109,6 +109,110 @@ const boot = () => {
         });
     });
 
+    const autocompleteState = new WeakMap();
+
+    const openProductSearch = (query) => {
+        const value = String(query ?? "").trim();
+        if (!value) return;
+        const url = new URL("products.html", window.location.href);
+        url.searchParams.set("q", value);
+        window.location.href = url.toString();
+    };
+
+    const setupProductAutocomplete = (form, getProducts) => {
+        const input = form.querySelector("input[type='search']");
+        if (!input || autocompleteState.has(form)) return;
+
+        form.classList.add("search--suggest");
+        const panel = document.createElement("div");
+        panel.className = "search-suggestions";
+        panel.setAttribute("role", "listbox");
+        panel.hidden = true;
+        form.appendChild(panel);
+
+        const state = { activeIndex: -1, items: [] };
+        autocompleteState.set(form, state);
+
+        const close = () => {
+            panel.hidden = true;
+            panel.innerHTML = "";
+            state.activeIndex = -1;
+            state.items = [];
+        };
+
+        const render = () => {
+            panel.innerHTML = "";
+            state.items.forEach((item, index) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = `search-suggestion${index === state.activeIndex ? " is-active" : ""}`;
+                button.setAttribute("role", "option");
+                button.innerHTML = `
+                    <span class="suggestion-icon" aria-hidden="true"></span>
+                    <span class="suggestion-copy">
+                        <strong></strong>
+                        <small></small>
+                    </span>
+                    <span class="suggestion-price"></span>
+                `;
+                button.querySelector("strong").textContent = item.title;
+                button.querySelector("small").textContent = item.category;
+                button.querySelector(".suggestion-price").textContent = item.price ? formatPrice(item.price) : "";
+                button.addEventListener("mousedown", (event) => {
+                    event.preventDefault();
+                    input.value = item.title;
+                    openProductSearch(item.title);
+                });
+                panel.appendChild(button);
+            });
+            panel.hidden = state.items.length === 0;
+        };
+
+        const update = () => {
+            const query = input.value.trim().toLowerCase();
+            const products = Array.isArray(getProducts()) ? getProducts() : [];
+            const categoryItems = Array.from(new Set(products.map((p) => String(p.category ?? "").trim()).filter(Boolean)))
+                .map((category) => ({ title: category, category: "Category", price: "", query: category }));
+            const productItems = products.map((product) => ({
+                title: String(product.title ?? "Product"),
+                category: String(product.category ?? "Featured"),
+                price: product.price,
+                query: String(product.title ?? ""),
+            }));
+            const all = [...productItems, ...categoryItems];
+            state.items = all
+                .filter((item) => {
+                    const hay = `${item.title} ${item.category}`.toLowerCase();
+                    return query ? hay.includes(query) : true;
+                })
+                .slice(0, 7);
+            state.activeIndex = -1;
+            render();
+        };
+
+        input.addEventListener("input", update);
+        input.addEventListener("focus", update);
+        input.addEventListener("keydown", (event) => {
+            if (panel.hidden || state.items.length === 0) return;
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                state.activeIndex = (state.activeIndex + 1) % state.items.length;
+                render();
+            } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                state.activeIndex = (state.activeIndex - 1 + state.items.length) % state.items.length;
+                render();
+            } else if (event.key === "Enter" && state.activeIndex >= 0) {
+                event.preventDefault();
+                input.value = state.items[state.activeIndex].query;
+                openProductSearch(state.items[state.activeIndex].query);
+            } else if (event.key === "Escape") {
+                close();
+            }
+        });
+        input.addEventListener("blur", () => window.setTimeout(close, 120));
+    };
+
     const createToast = () => {
         let toast = document.querySelector("[data-toast]");
         if (toast) return toast;
@@ -158,7 +262,7 @@ const boot = () => {
             onChange: () => () => {},
         });
 
-    const productsCacheKey = "ss_products_cache_v5";
+    const productsCacheKey = "ss_products_cache_v6";
     const productsCacheTtlMs = 30 * 60 * 1000;
 
     const wishlistKey = "ss_wishlist_v1";
@@ -212,6 +316,13 @@ const boot = () => {
     const showWishlistBtn = document.querySelector("[data-show-wishlist]");
     const recentSection = document.querySelector("[data-recently-viewed]");
     const recentRow = document.querySelector("[data-recent-row]");
+    const categoryTitle = document.querySelector("[data-category-title]");
+    const categorySubtitle = document.querySelector("[data-category-subtitle]");
+    const categoryKicker = document.querySelector("[data-category-kicker]");
+    const categoryCards = document.querySelectorAll("[data-category-card]");
+    const categoryTabs = document.querySelector("[data-category-tabs]");
+    const activeDepartment = document.querySelector("[data-active-department]");
+    const filterSummary = document.querySelector("[data-filter-summary]");
     let productsHandlersWired = false;
 
     const fallbackProducts = [
@@ -587,17 +698,49 @@ const boot = () => {
         return card;
     };
 
+    const assignCatalogOrder = (items) =>
+        items.map((product, index) => ({
+            ...product,
+            sortIndex: Number.isFinite(Number(product?.sortIndex)) ? Number(product.sortIndex) : index,
+        }));
+
+    const getPriceValue = (product, direction = "asc") => {
+        const price = Number(product?.price);
+        if (Number.isFinite(price)) return price;
+        return direction === "asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+    };
+
+    const getRatingValue = (product) => {
+        const rating = Number(product?.rating?.rate);
+        return Number.isFinite(rating) ? rating : 0;
+    };
+
+    const getReviewCount = (product) => {
+        const count = Number(product?.rating?.count);
+        return Number.isFinite(count) ? count : 0;
+    };
+
+    const getNewestValue = (product) => {
+        const dateValue = Date.parse(String(product?.createdAt ?? product?.updatedAt ?? ""));
+        if (Number.isFinite(dateValue)) return dateValue;
+        const index = Number(product?.sortIndex);
+        return Number.isFinite(index) ? index : 0;
+    };
+
     const sortProducts = (products, sortValue) => {
         const list = [...products];
         switch (sortValue) {
+            case "newest":
+                list.sort((a, b) => getNewestValue(b) - getNewestValue(a));
+                return list;
+            case "best-rated":
+                list.sort((a, b) => getRatingValue(b) - getRatingValue(a) || getReviewCount(b) - getReviewCount(a));
+                return list;
             case "price-asc":
-                list.sort((a, b) => Number(a.price) - Number(b.price));
+                list.sort((a, b) => getPriceValue(a, "asc") - getPriceValue(b, "asc"));
                 return list;
             case "price-desc":
-                list.sort((a, b) => Number(b.price) - Number(a.price));
-                return list;
-            case "title-asc":
-                list.sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? "")));
+                list.sort((a, b) => getPriceValue(b, "desc") - getPriceValue(a, "desc"));
                 return list;
             case "featured":
             default:
@@ -608,6 +751,8 @@ const boot = () => {
     const filterProducts = (products, filters) => {
         const query = String(filters?.query ?? "").trim().toLowerCase();
         const category = String(filters?.category ?? "");
+        const categoryGroup = String(filters?.categoryGroup ?? "all");
+        const categoryBelongsToGroup = typeof filters?.categoryBelongsToGroup === "function" ? filters.categoryBelongsToGroup : () => true;
         const wishlistOnly = Boolean(filters?.wishlistOnly);
         const wishlistIds = Array.isArray(filters?.wishlistIds) ? filters.wishlistIds.map((x) => String(x)) : [];
         const maxPrice = Number(filters?.maxPrice);
@@ -627,6 +772,8 @@ const boot = () => {
 
             if (category && category !== "all") {
                 if (cat.toLowerCase() !== category) return false;
+            } else if (categoryGroup && categoryGroup !== "all" && !categoryBelongsToGroup(cat, categoryGroup)) {
+                return false;
             }
 
             if (Number.isFinite(maxPrice) && maxPrice > 0) {
@@ -657,6 +804,8 @@ const boot = () => {
         const product = data && typeof data === "object" ? data : {};
         const ratingRate = Number(product.ratingRate ?? product.rating?.rate);
         const ratingCount = Number(product.ratingCount ?? product.rating?.count);
+        const createdAt = product.createdAt?.toDate?.()?.toISOString?.() ?? product.createdAt ?? product.addedAt ?? "";
+        const updatedAt = product.updatedAt?.toDate?.()?.toISOString?.() ?? product.updatedAt ?? "";
         return {
             id,
             title: String(product.title ?? "Product"),
@@ -670,29 +819,47 @@ const boot = () => {
                 rate: Number.isFinite(ratingRate) ? ratingRate : 4.3,
                 count: Number.isFinite(ratingCount) ? ratingCount : 250,
             },
+            createdAt: String(createdAt ?? ""),
+            updatedAt: String(updatedAt ?? ""),
         };
     };
 
-    const normalizeApiProduct = (raw) => {
+    const normalizeApiProduct = (raw, options = {}) => {
         const product = raw && typeof raw === "object" ? raw : {};
         const id = product.id ?? product._id ?? product.productId;
         const ratingRate = Number(product.ratingRate ?? product.rating?.rate ?? product.rating);
         const ratingCount = Number(product.ratingCount ?? product.rating?.count ?? product.stock);
-        const images = Array.isArray(product.images) ? product.images.map((x) => String(x)) : [];
-        const thumbnail = String(product.thumbnail ?? product.image ?? images[0] ?? "");
+        const rawImages = Array.isArray(product.images) ? product.images : [];
+        const images = rawImages
+            .map((x) => (typeof x === "string" ? x : x?.url ?? x?.src ?? ""))
+            .map((x) => String(x).replaceAll("[", "").replaceAll("]", "").replaceAll('"', "").trim())
+            .filter(Boolean);
+        const rawImage = product.thumbnail ?? product.image ?? product.images?.[0] ?? "";
+        const thumbnail = String(typeof rawImage === "string" ? rawImage : rawImage?.url ?? rawImage?.src ?? images[0] ?? "")
+            .replaceAll("[", "")
+            .replaceAll("]", "")
+            .replaceAll('"', "")
+            .trim();
+        const source = String(options.source ?? product.source ?? "");
+        const normalizedId = String(id ?? "").trim();
+        const prefixedId = source && normalizedId ? `${source}-${normalizedId}` : normalizedId;
+        const createdAt = product.createdAt ?? product.creationAt ?? product.addedAt ?? "";
+        const updatedAt = product.updatedAt ?? product.updated_at ?? "";
         return {
-            id: String(id ?? ""),
+            id: prefixedId,
             title: String(product.title ?? "Product"),
             price: Number(product.price ?? 0),
             image: thumbnail,
             images: images.length ? images : thumbnail ? [thumbnail, thumbnail, thumbnail] : [],
-            category: String(product.category ?? "featured").toLowerCase(),
+            category: String(product.category?.name ?? product.category ?? "featured").toLowerCase(),
             description: String(product.description ?? ""),
             offer: String(product.offer ?? ""),
             rating: {
                 rate: Number.isFinite(ratingRate) ? ratingRate : 4.3,
                 count: Number.isFinite(ratingCount) ? ratingCount : 250,
             },
+            createdAt: String(createdAt ?? ""),
+            updatedAt: String(updatedAt ?? ""),
         };
     };
 
@@ -775,6 +942,68 @@ const boot = () => {
         }
     };
 
+    const fetchJson = async (url, label, ms = 9000) => {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), ms);
+        try {
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: { accept: "application/json" },
+            });
+            if (!response.ok) throw new Error(`${label} bad response: ${response.status}`);
+            return response.json();
+        } finally {
+            window.clearTimeout(timer);
+        }
+    };
+
+    const fetchFakeStoreProducts = async () => {
+        const payload = await fetchJson("https://fakestoreapi.com/products", "Fake Store");
+        const data = Array.isArray(payload) ? payload : payload?.products;
+        if (!Array.isArray(data) || data.length === 0) throw new Error("No Fake Store products");
+        return data.map((item) => normalizeApiProduct(item, { source: "fs" })).filter((p) => p.id);
+    };
+
+    const fetchDummyJsonProducts = async () => {
+        const payload = await fetchJson(
+            "https://dummyjson.com/products?limit=100&select=id,title,price,description,category,thumbnail,images,rating,stock",
+            "DummyJSON"
+        );
+        const data = Array.isArray(payload) ? payload : payload?.products;
+        if (!Array.isArray(data) || data.length === 0) throw new Error("No DummyJSON products");
+        return data.map((item) => normalizeApiProduct(item, { source: "dj" })).filter((p) => p.id);
+    };
+
+    const fetchPlatziProducts = async () => {
+        const payload = await fetchJson("https://api.escuelajs.co/api/v1/products?offset=0&limit=80", "Platzi Fake Store");
+        const data = Array.isArray(payload) ? payload : payload?.products;
+        if (!Array.isArray(data) || data.length === 0) throw new Error("No Platzi products");
+        return data.map((item) => normalizeApiProduct(item, { source: "pl" })).filter((p) => p.id && p.image);
+    };
+
+    const uniqueProducts = (products) => {
+        const seen = new Set();
+        return products.filter((product) => {
+            const id = String(product?.id ?? "");
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        });
+    };
+
+    const fetchProductsFromApis = async () => {
+        setStatus(`<div class="notice">Fetching products from multiple APIs...</div>`);
+        const results = await Promise.allSettled([
+            fetchFakeStoreProducts(),
+            fetchDummyJsonProducts(),
+            fetchPlatziProducts(),
+            fetchToyProductsFromCommons(),
+        ]);
+        const products = results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+        if (products.length === 0) throw new Error("No API products");
+        return uniqueProducts(products).slice(0, 220);
+    };
+
     const fetchProductsFromLocal = async () => {
         setStatus(`<div class="notice">Loading demo products locallyâ€¦</div>`);
         const controller = new AbortController();
@@ -830,13 +1059,15 @@ const boot = () => {
         const cache = readProductsCache();
         let products = [];
         let source = "api";
+        searchForms.forEach((form) => setupProductAutocomplete(form, () => products));
 
         if (cache && isFreshCache(cache)) {
-            products = cache.data;
+            products = assignCatalogOrder(cache.data);
             source = "cache";
         }
 
         let searchQuery = "";
+        let selectedCategoryGroup = "all";
         let selectedCategory = "all";
         let wishlistOnly = false;
         let maxPriceValue = "";
@@ -844,6 +1075,178 @@ const boot = () => {
         const getSortValue = () => (sortSelect?.value ?? "featured").toString();
 
         const getWishlistIds = () => readWishlist();
+
+        const categoryGroups = {
+            all: {
+                label: "All",
+                title: "All Collections",
+                subtitle: "Premium picks from every section",
+                categories: [],
+            },
+            men: {
+                label: "Men",
+                title: "Mens Style",
+                subtitle: "Clothing, shirts, shoes, watches, and daily essentials",
+                categories: ["men's clothing", "mens clothing", "mens-shirts", "mens-shoes", "mens-watches", "clothes", "fashion"],
+            },
+            women: {
+                label: "Women",
+                title: "Womens Fashion",
+                subtitle: "Clothing, beauty, fragrances, and curated accessories",
+                categories: ["women's clothing", "womens clothing", "womens-clothing", "beauty", "fragrances", "fashion"],
+            },
+            kids: {
+                label: "Kids",
+                title: "Kids & Toys",
+                subtitle: "Toys, games, learning kits, plush gifts, and playful offers",
+                categories: ["kids toys", "toys"],
+            },
+            electronics: {
+                label: "Electronics",
+                title: "Electronics",
+                subtitle: "Smart gadgets, laptops, mobile accessories, and tech deals",
+                categories: ["electronics", "laptops", "mobile-accessories"],
+            },
+            home: {
+                label: "Home",
+                title: "Home & Living",
+                subtitle: "Furniture, decor, kitchen picks, groceries, and living deals",
+                categories: ["home", "furniture", "home-decoration", "kitchen-accessories", "groceries"],
+            },
+            beauty: {
+                label: "Beauty",
+                title: "Beauty",
+                subtitle: "Beauty products, fragrances, and everyday grooming picks",
+                categories: ["beauty", "fragrances"],
+            },
+            jewelry: {
+                label: "Jewelry",
+                title: "Jewelry",
+                subtitle: "Jewelry, accessories, and elegant finishing pieces",
+                categories: ["jewelery", "jewelry", "accessories"],
+            },
+        };
+
+        const categoryPageInfo = {
+            "men's clothing": {
+                title: "Mens Clothing",
+                subtitle: "Shirts, jackets, casual essentials, and everyday menswear deals.",
+                kicker: "Category page",
+            },
+            "women's clothing": {
+                title: "Womens Clothing",
+                subtitle: "Fresh styles, jackets, tops, and curated fashion picks for women.",
+                kicker: "Category page",
+            },
+            "kids toys": {
+                title: "Kids Toys",
+                subtitle: "Toys, games, puzzles, plush gifts, and learning kits with offers.",
+                kicker: "Category page",
+            },
+            toys: {
+                title: "Toys",
+                subtitle: "Playful toys, games, puzzles, and gift-ready kids products.",
+                kicker: "Category page",
+            },
+            electronics: {
+                title: "Electronics",
+                subtitle: "Smart gadgets, storage, displays, accessories, and tech deals.",
+                kicker: "Category page",
+            },
+            home: {
+                title: "Home & Living",
+                subtitle: "Furniture, decor, kitchen picks, groceries, and living deals.",
+                kicker: "Department page",
+            },
+            beauty: {
+                title: "Beauty",
+                subtitle: "Beauty products, fragrances, and everyday grooming picks.",
+                kicker: "Department page",
+            },
+            jewelry: {
+                title: "Jewelry",
+                subtitle: "Jewelry, accessories, and elegant finishing pieces.",
+                kicker: "Department page",
+            },
+        };
+
+        const normalizeCategoryParam = (value) => {
+            const raw = String(value ?? "").trim().toLowerCase();
+            if (!raw) return "all";
+            if (raw === "men" || raw === "mens" || raw === "men clothing") return "men's clothing";
+            if (raw === "women" || raw === "womens" || raw === "women clothing") return "women's clothing";
+            if (raw === "kids" || raw === "toys" || raw === "toy") return "kids toys";
+            return raw;
+        };
+
+        const normalizeGroupParam = (value) => {
+            const raw = String(value ?? "").trim().toLowerCase();
+            if (!raw) return "all";
+            if (raw === "mens" || raw === "men clothing" || raw === "men's clothing") return "men";
+            if (raw === "womens" || raw === "women clothing" || raw === "women's clothing") return "women";
+            if (raw === "toy" || raw === "toys" || raw === "kids toys") return "kids";
+            if (raw === "tech") return "electronics";
+            if (raw === "jewelery") return "jewelry";
+            return categoryGroups[raw] ? raw : "all";
+        };
+
+        const getCategoryGroup = (category) => {
+            const normalized = normalizeCategoryParam(category);
+            if (normalized === "all") return "all";
+            const entry = Object.entries(categoryGroups).find(([, group]) => group.categories.includes(normalized));
+            return entry?.[0] ?? "all";
+        };
+
+        const categoryBelongsToGroup = (category, groupKey) => {
+            if (!groupKey || groupKey === "all") return true;
+            const normalized = normalizeCategoryParam(category);
+            return categoryGroups[groupKey]?.categories.includes(normalized) ?? false;
+        };
+
+        const labelForCategory = (category) =>
+            category === "all"
+                ? "Products"
+                : categoryPageInfo[category]?.title ||
+                  category
+                      .replaceAll("-", " ")
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                      .join(" ");
+
+        const syncCategoryPage = () => {
+            const groupInfo = categoryGroups[selectedCategoryGroup] ?? categoryGroups.all;
+            const info = selectedCategory === "all" ? groupInfo : categoryPageInfo[selectedCategory];
+            if (categoryTitle) categoryTitle.textContent = selectedCategory === "all" ? (selectedCategoryGroup === "all" ? "Products" : groupInfo.title) : labelForCategory(selectedCategory);
+            if (categorySubtitle) {
+                categorySubtitle.textContent =
+                    selectedCategory === "all" && selectedCategoryGroup === "all"
+                        ? "Browse our latest picks. Add items to your cart in one click."
+                        : info?.subtitle || `Explore ${labelForCategory(selectedCategory)} products and offers.`;
+            }
+            if (categoryKicker) categoryKicker.textContent = selectedCategory === "all" ? (selectedCategoryGroup === "all" ? "Shop by category" : "Department page") : info?.kicker || "Category page";
+            if (activeDepartment) activeDepartment.textContent = groupInfo.title;
+            if (filterSummary) filterSummary.textContent = selectedCategory === "all" ? groupInfo.subtitle : `Showing ${labelForCategory(selectedCategory)} inside ${groupInfo.label}`;
+            categoryCards.forEach((card) => {
+                const cardGroup = normalizeGroupParam(card.dataset.categoryCard);
+                card.classList.toggle("is-active", selectedCategoryGroup !== "all" && cardGroup === selectedCategoryGroup);
+            });
+        };
+
+        const renderCategoryTabs = () => {
+            if (!categoryTabs) return;
+            categoryTabs.innerHTML = "";
+            const fragment = document.createDocumentFragment();
+            Object.entries(categoryGroups).forEach(([key, group]) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = `category-tab${key === selectedCategoryGroup ? " is-active" : ""}`;
+                btn.dataset.categoryGroup = key;
+                btn.innerHTML = `<span>${group.label}</span><small>${key === "all" ? "Everything" : `${group.categories.length} sections`}</small>`;
+                fragment.appendChild(btn);
+            });
+            categoryTabs.appendChild(fragment);
+        };
 
         const renderCategoryChips = () => {
             if (!categoryChips) return;
@@ -855,7 +1258,11 @@ const boot = () => {
                 )
             ).sort((a, b) => a.localeCompare(b));
 
-            const all = ["all", ...categories];
+            const visibleCategories =
+                selectedCategoryGroup === "all"
+                    ? categories.filter((cat) => getCategoryGroup(cat) !== "all").slice(0, 10)
+                    : categories.filter((cat) => categoryBelongsToGroup(cat, selectedCategoryGroup));
+            const all = ["all", ...visibleCategories];
             categoryChips.innerHTML = "";
             const fragment = document.createDocumentFragment();
             all.forEach((cat) => {
@@ -863,7 +1270,7 @@ const boot = () => {
                 btn.type = "button";
                 btn.className = `chip${cat === selectedCategory ? " is-active" : ""}`;
                 btn.dataset.category = cat;
-                btn.textContent = cat === "all" ? "All" : cat;
+                btn.textContent = cat === "all" ? (selectedCategoryGroup === "all" ? "All products" : `All ${categoryGroups[selectedCategoryGroup]?.label}`) : labelForCategory(cat);
                 fragment.appendChild(btn);
             });
             categoryChips.appendChild(fragment);
@@ -873,6 +1280,8 @@ const boot = () => {
             const filtered = filterProducts(products, {
                 query: searchQuery,
                 category: selectedCategory,
+                categoryGroup: selectedCategoryGroup,
+                categoryBelongsToGroup,
                 wishlistOnly,
                 wishlistIds: getWishlistIds(),
                 maxPrice: maxPriceValue,
@@ -910,7 +1319,10 @@ const boot = () => {
             searchForms.forEach(attachSearchInput);
 
             try {
-                const initialQuery = new URLSearchParams(window.location.search).get("q") ?? "";
+                const params = new URLSearchParams(window.location.search);
+                const initialQuery = params.get("q") ?? "";
+                const initialCategory = normalizeCategoryParam(params.get("category") ?? params.get("cat") ?? "");
+                const initialGroup = normalizeGroupParam(params.get("group") ?? "");
                 if (initialQuery) {
                     searchQuery = initialQuery;
                     searchForms.forEach((form) => {
@@ -918,6 +1330,12 @@ const boot = () => {
                         if (input) input.value = initialQuery;
                     });
                 }
+                if (initialGroup && initialGroup !== "all") selectedCategoryGroup = initialGroup;
+                if (initialCategory && initialCategory !== "all") {
+                    selectedCategory = initialCategory;
+                    selectedCategoryGroup = getCategoryGroup(initialCategory);
+                }
+                syncCategoryPage();
             } catch {
                 // ignore
             }
@@ -938,19 +1356,36 @@ const boot = () => {
                 const btn = event.target.closest("button[data-category]");
                 if (!btn) return;
                 selectedCategory = String(btn.dataset.category ?? "all");
+                if (selectedCategory !== "all") selectedCategoryGroup = getCategoryGroup(selectedCategory);
+                syncCategoryPage();
+                renderCategoryTabs();
                 categoryChips.querySelectorAll("button[data-category]").forEach((el) => {
                     el.classList.toggle("is-active", el === btn);
                 });
                 apply();
             });
 
+            categoryTabs?.addEventListener("click", (event) => {
+                const btn = event.target.closest("button[data-category-group]");
+                if (!btn) return;
+                selectedCategoryGroup = normalizeGroupParam(btn.dataset.categoryGroup);
+                selectedCategory = "all";
+                syncCategoryPage();
+                renderCategoryTabs();
+                renderCategoryChips();
+                apply();
+            });
+
             clearFiltersBtn?.addEventListener("click", () => {
+                selectedCategoryGroup = "all";
                 selectedCategory = "all";
                 wishlistOnly = false;
                 maxPriceValue = "";
                 minRatingValue = "0";
                 if (maxPriceInput) maxPriceInput.value = "";
                 if (minRatingSelect) minRatingSelect.value = "0";
+                syncCategoryPage();
+                renderCategoryTabs();
                 renderCategoryChips();
                 apply();
             });
@@ -1015,6 +1450,8 @@ const boot = () => {
         wireHandlers();
 
         const renderFromSource = () => {
+            syncCategoryPage();
+            renderCategoryTabs();
             renderCategoryChips();
             renderRecentlyViewed(products);
             apply();
@@ -1031,7 +1468,7 @@ const boot = () => {
         try {
             let fresh = null;
             try {
-                fresh = await fetchProductsFromApi();
+                fresh = await fetchProductsFromApis();
                 source = "api";
             } catch {
                 try {
@@ -1043,12 +1480,12 @@ const boot = () => {
                 }
             }
 
-            products = fresh;
-            writeProductsCache(fresh);
+            products = assignCatalogOrder(fresh);
+            writeProductsCache(products);
             setStatus("");
         } catch {
             if (products.length === 0) {
-                products = [...fallbackProducts, ...toyProducts];
+                products = assignCatalogOrder([...fallbackProducts, ...toyProducts]);
                 source = "fallback";
                 writeProductsCache(products);
                 setStatus(
@@ -1061,6 +1498,8 @@ const boot = () => {
             }
         }
 
+        syncCategoryPage();
+        renderCategoryTabs();
         renderCategoryChips();
         renderRecentlyViewed(products);
         apply();
