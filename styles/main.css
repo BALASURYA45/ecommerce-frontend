@@ -3721,9 +3721,13 @@ a {
 }
 
 .toy-deal-card img {
-    width: 86px;
-    height: 86px;
-    object-fit: contain;
+    width: 100%;
+    height: 138px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(248, 250, 252, 0.96);
+    box-shadow: 0 14px 30px rgba(17, 24, 39, 0.08);
 }
 
 .toy-deal-card span {
@@ -3792,10 +3796,15 @@ a {
 }
 
 .promo-card img {
-    width: 74px;
-    height: 74px;
+    width: 142px;
+    height: 112px;
     object-fit: contain;
     margin-bottom: 18px;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 14px 30px rgba(17, 24, 39, 0.08);
 }
 
 .promo-eyebrow {
@@ -3845,9 +3854,13 @@ a {
 }
 
 .category-preview img {
-    width: 86px;
-    height: 86px;
-    object-fit: contain;
+    width: 100%;
+    height: 132px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(248, 250, 252, 0.96);
+    box-shadow: 0 14px 30px rgba(17, 24, 39, 0.08);
 }
 
 .category-preview strong {
