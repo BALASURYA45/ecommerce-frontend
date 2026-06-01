@@ -12,9 +12,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const emptyState = document.querySelector("[data-checkout-empty]");
     const summaryCount = document.querySelector("[data-summary-count]");
     const summarySubtotal = document.querySelector("[data-summary-subtotal]");
+    const summaryDiscountRow = document.querySelector("[data-discount-row]");
+    const summaryDiscount = document.querySelector("[data-summary-discount]");
     const summaryTotal = document.querySelector("[data-summary-total]");
+    const couponForm = document.querySelector("[data-coupon-form]");
+    const couponInput = document.querySelector("[data-coupon-input]");
+    const couponMessage = document.querySelector("[data-coupon-message]");
+    const removeCoupon = document.querySelector("[data-remove-coupon]");
 
     const cartApi = window.ShopSmartCart;
+    const couponApi = window.ShopSmartCoupons;
     if (!cartApi) return;
 
     if (year) year.textContent = String(new Date().getFullYear());
@@ -118,6 +125,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Payment modules intentionally removed. Checkout is Cash on Delivery only (demo).
 
+    const setCouponMessage = (message, variant = "") => {
+        if (!couponMessage) return;
+        couponMessage.textContent = message || "";
+        couponMessage.dataset.variant = variant;
+    };
+
+    const getCouponResult = (subtotal) => {
+        if (!couponApi) return { discount: 0, valid: false, code: "", message: "" };
+        return couponApi.calculateDiscount(subtotal);
+    };
+
+    const updateCouponUi = (subtotal) => {
+        const result = getCouponResult(subtotal);
+        const hasCode = Boolean(result.code);
+        const hasDiscount = result.valid && result.discount > 0;
+
+        if (couponInput && hasCode) couponInput.value = result.code;
+        if (summaryDiscountRow) summaryDiscountRow.hidden = !hasDiscount;
+        if (summaryDiscount) summaryDiscount.textContent = hasDiscount ? `-${formatPrice(result.discount)}` : `-${formatPrice(0)}`;
+        if (removeCoupon) removeCoupon.hidden = !hasCode;
+
+        if (!hasCode) {
+            setCouponMessage("Try SAVE10, FIRST30, or FLAT200 before placing your order.", "");
+        } else if (result.valid) {
+            setCouponMessage(result.message, "success");
+        } else {
+            setCouponMessage(result.message, "error");
+        }
+
+        return result;
+    };
+
     const renderSummary = () => {
         if (!checkoutItems) return;
         const cart = cartApi.readCart();
@@ -167,14 +206,56 @@ document.addEventListener("DOMContentLoaded", () => {
         const subtotal = computeSubtotal(cart);
         const count = cartApi.getCount(cart);
         if (summaryCount) summaryCount.textContent = `${count} item${count === 1 ? "" : "s"}`;
+        const couponResult = updateCouponUi(subtotal);
+        const discount = couponResult.valid ? couponResult.discount : 0;
+        const total = Math.max(0, subtotal - discount);
         if (summarySubtotal) summarySubtotal.textContent = formatPrice(subtotal);
-        if (summaryTotal) summaryTotal.textContent = formatPrice(subtotal);
+        if (summaryTotal) summaryTotal.textContent = formatPrice(total);
     };
 
     updateCartBadge();
     cartApi.onChange(updateCartBadge);
     cartApi.onChange(renderSummary);
     renderSummary();
+
+    couponForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!couponApi) return;
+
+        const cart = cartApi.readCart();
+        const subtotal = computeSubtotal(cart);
+        const code = couponInput?.value || "";
+        const result = couponApi.validateCoupon(code, subtotal);
+
+        if (!result.ok) {
+            setCouponMessage(result.message, "error");
+            showToast(result.message, "error");
+            return;
+        }
+
+        couponApi.saveAppliedCoupon(result.coupon.code);
+        setCouponMessage(result.message, "success");
+        showToast(result.message, "success");
+        renderSummary();
+    });
+
+    couponForm?.addEventListener("click", (event) => {
+        const chip = event.target.closest("[data-coupon-chip]");
+        if (!chip || !couponApi) return;
+        const code = chip.dataset.couponChip || "";
+        if (couponInput) couponInput.value = code;
+        couponForm.requestSubmit();
+    });
+
+    removeCoupon?.addEventListener("click", () => {
+        if (!couponApi) return;
+        couponApi.clearAppliedCoupon();
+        if (couponInput) couponInput.value = "";
+        setCouponMessage("Coupon removed. You can apply another offer.", "");
+        renderSummary();
+    });
+
+    window.addEventListener("shopsmart:coupon-change", renderSummary);
 
     if (checkoutForm) {
         checkoutForm.addEventListener("submit", async (event) => {
@@ -214,6 +295,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const subtotal = computeSubtotal(cart);
+            const couponResult = getCouponResult(subtotal);
+            const discount = couponResult.valid ? couponResult.discount : 0;
+            const total = Math.max(0, subtotal - discount);
             const orderPayload = {
                 userId: auth?.currentUser?.uid ?? null,
                 userEmail: auth?.currentUser?.email ?? null,
@@ -228,7 +312,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 })),
                 subtotal: Number.isFinite(subtotal) ? subtotal : null,
                 shipping: 0,
-                total: Number.isFinite(subtotal) ? subtotal : null,
+                discount: Number.isFinite(discount) ? discount : 0,
+                coupon: couponResult.valid
+                    ? {
+                          code: couponResult.coupon.code,
+                          label: couponResult.coupon.label,
+                          discount,
+                      }
+                    : null,
+                total: Number.isFinite(total) ? total : null,
                 address: { name, phone, address, city, zip },
                 payment: { method: payment, status: "initiated" },
                 createdAt: serverTimestamp?.() ?? new Date().toISOString(),
@@ -250,6 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 cartApi.writeCart({ version: 2, items: {} });
+                couponApi?.clearAppliedCoupon();
                 renderSummary();
                 showToast("Order placed (Cash on Delivery).", "success");
                 checkoutForm.reset();

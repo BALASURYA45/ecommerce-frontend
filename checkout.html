@@ -223,6 +223,26 @@
                                 <span class="summary-label">Shipping</span>
                                 <span class="summary-value summary-muted">Free</span>
                             </div>
+                            <form class="coupon-box" data-coupon-form aria-label="Apply coupon code">
+                                <div class="coupon-head">
+                                    <span>Apply coupon</span>
+                                    <button class="coupon-remove" type="button" data-remove-coupon hidden>Remove</button>
+                                </div>
+                                <div class="coupon-row">
+                                    <input class="coupon-input" type="text" inputmode="text" autocomplete="off" placeholder="Enter code" data-coupon-input />
+                                    <button class="coupon-apply" type="submit">Apply</button>
+                                </div>
+                                <div class="coupon-chips" aria-label="Suggested coupon codes">
+                                    <button class="coupon-chip" type="button" data-coupon-chip="SAVE10">SAVE10</button>
+                                    <button class="coupon-chip" type="button" data-coupon-chip="FIRST30">FIRST30</button>
+                                    <button class="coupon-chip" type="button" data-coupon-chip="FLAT200">FLAT200</button>
+                                </div>
+                                <p class="coupon-message" data-coupon-message aria-live="polite"></p>
+                            </form>
+                            <div class="summary-row summary-row--discount" data-discount-row hidden>
+                                <span class="summary-label">Coupon discount</span>
+                                <span class="summary-value" data-summary-discount>-Rs.0</span>
+                            </div>
                             <div class="summary-divider" role="separator" aria-hidden="true"></div>
                             <div class="summary-row summary-row--total">
                                 <span class="summary-label">Total</span>
@@ -274,6 +294,7 @@
     </footer>
 
     <script src="scripts/cart.js"></script>
+    <script src="scripts/coupons.js"></script>
     <script type="module" src="scripts/firebase-init.js"></script>
     <script type="module" src="scripts/session-ui.js"></script>
     <script type="module" src="scripts/pwa.js"></script>

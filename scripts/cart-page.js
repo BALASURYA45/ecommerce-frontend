@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const year = document.querySelector("[data-year]");
 
     const cartApi = window.ShopSmartCart;
+    const couponApi = window.ShopSmartCoupons;
     if (!cartApi) return;
 
     if (year) year.textContent = String(new Date().getFullYear());
@@ -110,8 +111,14 @@ document.addEventListener("DOMContentLoaded", () => {
         status: document.querySelector("[data-cart-status]"),
         summaryCount: document.querySelector("[data-summary-count]"),
         subtotal: document.querySelector("[data-summary-subtotal]"),
+        discountRow: document.querySelector("[data-discount-row]"),
+        discount: document.querySelector("[data-summary-discount]"),
         total: document.querySelector("[data-summary-total]"),
         checkout: document.querySelector("[data-checkout]"),
+        couponForm: document.querySelector("[data-coupon-form]"),
+        couponInput: document.querySelector("[data-coupon-input]"),
+        couponMessage: document.querySelector("[data-coupon-message]"),
+        removeCoupon: document.querySelector("[data-remove-coupon]"),
     };
 
     const setStatus = (html) => {
@@ -134,6 +141,38 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!Number.isFinite(price) || !Number.isFinite(qty) || qty <= 0) return total;
             return total + price * qty;
         }, 0);
+
+    const setCouponMessage = (message, variant = "") => {
+        if (!els.couponMessage) return;
+        els.couponMessage.textContent = message || "";
+        els.couponMessage.dataset.variant = variant;
+    };
+
+    const getCouponResult = (subtotal) => {
+        if (!couponApi) return { discount: 0, valid: false, code: "", message: "" };
+        return couponApi.calculateDiscount(subtotal);
+    };
+
+    const updateCouponUi = (subtotal) => {
+        const result = getCouponResult(subtotal);
+        const hasCode = Boolean(result.code);
+        const hasDiscount = result.valid && result.discount > 0;
+
+        if (els.couponInput && hasCode) els.couponInput.value = result.code;
+        if (els.discountRow) els.discountRow.hidden = !hasDiscount;
+        if (els.discount) els.discount.textContent = hasDiscount ? `-${formatPrice(result.discount)}` : `-${formatPrice(0)}`;
+        if (els.removeCoupon) els.removeCoupon.hidden = !hasCode;
+
+        if (!hasCode) {
+            setCouponMessage("Try SAVE10, FIRST30, or FLAT200 for instant savings.", "");
+        } else if (result.valid) {
+            setCouponMessage(result.message, "success");
+        } else {
+            setCouponMessage(result.message, "error");
+        }
+
+        return result;
+    };
 
     const render = () => {
         const cart = cartApi.readCart();
@@ -214,8 +253,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const subtotal = computeSubtotal(cart);
         const count = cartApi.getCount(cart);
         if (els.summaryCount) els.summaryCount.textContent = `${count} item${count === 1 ? "" : "s"}`;
+        const couponResult = updateCouponUi(subtotal);
+        const discount = couponResult.valid ? couponResult.discount : 0;
+        const total = Math.max(0, subtotal - discount);
         if (els.subtotal) els.subtotal.textContent = formatPrice(subtotal);
-        if (els.total) els.total.textContent = formatPrice(subtotal);
+        if (els.total) els.total.textContent = formatPrice(total);
 
         if (els.checkout) {
             els.checkout.disabled = count === 0;
@@ -227,6 +269,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     render();
     cartApi.onChange(render);
+
+    els.couponForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!couponApi) return;
+
+        const cart = cartApi.readCart();
+        const subtotal = computeSubtotal(cart);
+        const code = els.couponInput?.value || "";
+        const result = couponApi.validateCoupon(code, subtotal);
+
+        if (!result.ok) {
+            setCouponMessage(result.message, "error");
+            showToast(result.message, "error");
+            return;
+        }
+
+        couponApi.saveAppliedCoupon(result.coupon.code);
+        setCouponMessage(result.message, "success");
+        showToast(result.message, "success");
+        render();
+    });
+
+    els.couponForm?.addEventListener("click", (event) => {
+        const chip = event.target.closest("[data-coupon-chip]");
+        if (!chip || !couponApi) return;
+        const code = chip.dataset.couponChip || "";
+        if (els.couponInput) els.couponInput.value = code;
+        els.couponForm.requestSubmit();
+    });
+
+    els.removeCoupon?.addEventListener("click", () => {
+        if (!couponApi) return;
+        couponApi.clearAppliedCoupon();
+        if (els.couponInput) els.couponInput.value = "";
+        setCouponMessage("Coupon removed. Try another offer any time.", "");
+        render();
+    });
+
+    window.addEventListener("shopsmart:coupon-change", render);
 
     const clampQty = (value) => {
         const num = Math.floor(Number(value));
